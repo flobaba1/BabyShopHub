@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/core/router.dart';
+import 'package:baby_shop_hub/core/onboarding_service.dart';
 
-void main() {
-  runApp(const BabyShopApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Read first-time status before building the UI
+  final bool isFirstTime = await OnboardingService.isFirstTimeUser();
+
+  // 2. Pass the initial route dynamically
+  final String initialRoute = isFirstTime ? '/onboarding' : '/login';
+
+  runApp(BabyShopApp(initialRoute: initialRoute));
 }
 
 class BabyShopApp extends StatelessWidget {
-  const BabyShopApp({super.key});
+  final String initialRoute;
+
+  const BabyShopApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +29,7 @@ class BabyShopApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFFBFBFB),
       ),
-      routerConfig: appRouter,
+      routerConfig: createRouter(initialRoute),
     );
   }
 }

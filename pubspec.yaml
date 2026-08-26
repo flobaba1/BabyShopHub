@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   mysql_client: ^0.0.27
   go_router: ^17.0.0
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
