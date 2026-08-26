@@ -1,0 +1,42 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:baby_shop_hub/screens/auth/login.dart';
+import 'package:baby_shop_hub/screens/auth/signup.dart';
+import 'package:baby_shop_hub/screens/app/main_shell.dart';
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
+
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+final GoRouter appRouter = GoRouter(
+  initialLocation: '/login',
+  navigatorKey: _rootNavigatorKey,
+  routes: [
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => const SignupScreen(),
+    ),
+
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return MainShell(navigationShell: navigationShell);
+      },
+      branches: [
+        // Tab 1: Home Dashboard
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/home',
+              builder: (context, state) => const DashboardScreen(),
+            ),
+          ],
+        ),
+
+      ],
+    ),
+  ],
+);
