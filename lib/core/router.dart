@@ -5,48 +5,46 @@ import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/screens/auth/login.dart';
 import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
-import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
 import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-final GoRouter appRouter = GoRouter(
-  initialLocation: '/onboarding',
+GoRouter createRouter(String initialRoute) {
+  return GoRouter(
+    initialLocation: initialRoute,
+    navigatorKey: _rootNavigatorKey,
+    routes: [
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
 
-  navigatorKey: _rootNavigatorKey,
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainShell(navigationShell: navigationShell);
+        },
+        branches: [
+          // Tab 1: Home Dashboard
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
 
-  routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => const SignupScreen(),
-    ),
-
-    StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) {
-        return MainShell(navigationShell: navigationShell);
-      },
-      branches: [
-        // Tab 1: Home Dashboard
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/home',
-              builder: (context, state) => const DashboardScreen(),
-            ),
-          ],
-        ),
-      ],
-    ),
-
-    // Onboarding Screen
-    GoRoute(
-      path: '/onboarding',
-      builder: (context, state) => const OnboardingScreen(),
-    ),
-  ],
-);
+        ],
+      ),
+    ],
+  );
+}
