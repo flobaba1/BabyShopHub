@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
+
 import 'package:go_router/go_router.dart';
+
 import 'package:baby_shop_hub/screens/auth/login.dart';
 import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
-import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
-
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/onboarding',
+
   navigatorKey: _rootNavigatorKey,
+
   routes: [
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
     ),
+
     GoRoute(
       path: '/signup',
       builder: (context, state) => const SignupScreen(),
@@ -35,8 +40,13 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
-
       ],
+    ),
+
+    // Onboarding Screen
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
     ),
   ],
 );
