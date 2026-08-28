@@ -5,6 +5,7 @@ import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
 import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
 import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding_three.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -24,6 +25,10 @@ GoRouter createRouter(String initialRoute) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding-three',
+        builder: (context, state) => const FastSafeDeliveryScreen(),
       ),
 
       StatefulShellRoute.indexedStack(
