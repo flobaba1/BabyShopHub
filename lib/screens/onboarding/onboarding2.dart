@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/core/onboarding_service.dart';
 
-class OnboardingScreen extends StatelessWidget {
-  const OnboardingScreen({super.key});
-  
+class OnboardingScreenTwo extends StatelessWidget {
+  const OnboardingScreenTwo({super.key});
+
   Future<void> _finishOnboarding(BuildContext context) async {
     // 1. Persist the flag so onboarding won't show again
     await OnboardingService.completeOnboarding();
@@ -14,16 +14,17 @@ class OnboardingScreen extends StatelessWidget {
       context.go('/login');
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
             // Top orange section
             Expanded(
-              flex: 6,
+              flex: 5,
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
@@ -31,8 +32,8 @@ class OnboardingScreen extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0xFFFF8A65),
-                      Color(0xFFFF5A5F),
+                      Color(0xFFFF9800),
+                      Color(0xFFFF7300),
                     ],
                   ),
                 ),
@@ -40,34 +41,16 @@ class OnboardingScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      // Skip button
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: TextButton(
-                          onPressed: () {
-                            context.go('/login');
-                          },
-                          child: const Text(
-                            'Skip',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-
                       const Spacer(),
 
-                      // Temporary teddy icon
-                      const Icon(
-                        Icons.toys,
-                        size: 130,
-                        color: Colors.white,
+                      // Teddy image
+                      Image.asset(
+                        'assets/Teddy_Icon.png',
+                        width: 140,
+                        height: 140,
                       ),
 
-                      const SizedBox(height: 35),
+                      const SizedBox(height: 24),
 
                       const Text(
                         '7+ Curated Categories',
@@ -100,7 +83,7 @@ class OnboardingScreen extends StatelessWidget {
 
             // Bottom white section
             Expanded(
-              flex: 4,
+              flex: 5,
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -109,7 +92,7 @@ class OnboardingScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
 
                     // Page indicators
                     Row(
@@ -119,7 +102,7 @@ class OnboardingScreen extends StatelessWidget {
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: Colors.grey,
+                            color: Color(0xFFE0E0E0),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -128,7 +111,7 @@ class OnboardingScreen extends StatelessWidget {
                           width: 24,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: Colors.deepOrange,
+                            color: const Color(0xFFFF6D00),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -137,7 +120,7 @@ class OnboardingScreen extends StatelessWidget {
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: Colors.grey,
+                            color: Color(0xFFE0E0E0),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -146,41 +129,84 @@ class OnboardingScreen extends StatelessWidget {
 
                     const Spacer(),
 
-                    // Next button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Next onboarding page will be connected here
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepOrange,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                    // Side-by-side action buttons
+                    Row(
+                      children: [
+                        // Skip Button
+                        Expanded(
+                          child: SizedBox(
+                            height: 54,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                context.go('/login');
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFFEEEEEE)),
+                                foregroundColor: Colors.grey[700],
+                                shape: const StadiumBorder(),
+                              ),
+                              child: const Text(
+                                'Skip',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        child: const Text(
-                          'Next  →',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
+                        
+                        const SizedBox(width: 16),
+
+                        // Next Button with shadow matching UI
+                        Expanded(
+                          child: Container(
+                            height: 54,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(27),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFF6D00).withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // Connect your navigation sequence here
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF6D00),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: const StadiumBorder(),
+                              ),
+                              child: const Text(
+                                'Next \u2192',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
 
-                    const SizedBox(height: 25),
+                    const Spacer(),
 
-                    // Sign in
+                    // Sign in section
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
                           'Already have an account? ',
-                          style: TextStyle(fontSize: 15),
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 15,
+                          ),
                         ),
                         GestureDetector(
                           onTap: () {
@@ -189,7 +215,7 @@ class OnboardingScreen extends StatelessWidget {
                           child: const Text(
                             'Sign In',
                             style: TextStyle(
-                              color: Colors.deepOrange,
+                              color: Color(0xFFFF6D00),
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                             ),
@@ -197,6 +223,7 @@ class OnboardingScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
