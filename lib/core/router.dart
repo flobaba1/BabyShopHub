@@ -5,8 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/screens/auth/login.dart';
 import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
-import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
-import 'package:baby_shop_hub/screens/app/categories/categories.dart';
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
 import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
