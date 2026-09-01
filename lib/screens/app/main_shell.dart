@@ -8,99 +8,176 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int index = navigationShell.currentIndex;
+    final int currentIndex = navigationShell.currentIndex;
 
     return Scaffold(
-      // Dynamic Top AppBar based on active branch
-      appBar: _buildAppBar(context, index),
+      backgroundColor: Colors.white,
 
+      // The active screen
       body: navigationShell,
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: index,
-        onTap: (newIndex) => navigationShell.goBranch(
-          newIndex,
-          initialLocation: newIndex == index,
-        ),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.deepOrange,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Categories'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_outlined), label: 'Cart'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
+      // Bottom navigation used throughout the main app
+      bottomNavigationBar: _BottomNavigation(
+        currentIndex: currentIndex,
+        onTap: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == currentIndex,
+          );
+        },
       ),
     );
   }
+}
+//btm nav
+class _BottomNavigation extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        // Dashboard Custom Greeting Header
-        return AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: Row(
-            children: [
-              const CircleAvatar(
-                backgroundColor: Colors.orange,
-                child: Text('N', style: TextStyle(color: Colors.white)),
+  const _BottomNavigation({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 72,
+
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
+      ),
+
+      child: SafeArea(
+        top: false,
+
+        child: Row(
+          children: [
+            // HOME
+            Expanded(
+              child: _NavItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: 'Home',
+                isSelected: currentIndex == 0,
+                onTap: () => onTap(0),
               ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Good afternoon,', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  Text('New 👋', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
-                ],
+            ),
+              //categories
+            Expanded(
+              child: _NavItem(
+                icon: Icons.grid_view_outlined,
+                activeIcon: Icons.grid_view_rounded,
+                label: 'Categories',
+                isSelected: currentIndex == 1,
+                onTap: () => onTap(1),
               ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_none, color: Colors.black),
-              onPressed: () {},
+            ),
+
+            //cart
+            Expanded(
+              child: _NavItem(
+                icon: Icons.shopping_cart_outlined,
+                activeIcon: Icons.shopping_cart_rounded,
+                label: 'Cart',
+                isSelected: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+            ),
+
+            //orders
+            Expanded(
+              child: _NavItem(
+                icon: Icons.inventory_2_outlined,
+                activeIcon: Icons.inventory_2_rounded,
+                label: 'Orders',
+                isSelected: currentIndex == 3,
+                onTap: () => onTap(3),
+              ),
+            ),
+
+           //profile
+            Expanded(
+              child: _NavItem(
+                icon: Icons.person_outline_rounded,
+                activeIcon: Icons.person_rounded,
+                label: 'Profile',
+                isSelected: currentIndex == 4,
+                onTap: () => onTap(4),
+              ),
             ),
           ],
-        );
+        ),
+      ),
+    );
+  }
+}
+//nav item
 
-      case 1:
-        // Categories Screen Header
-        return AppBar(
-          title: const Text('All Categories'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 1,
-          actions: [
-            IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const Color activeColor = Color(0xFFFF6600);
+    const Color inactiveColor = Color(0xFF9AA4B5);
+
+    return GestureDetector(
+      onTap: onTap,
+
+      behavior: HitTestBehavior.opaque,
+
+      child: SizedBox(
+        height: 72,
+
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            //icon
+            Icon(
+              isSelected ? activeIcon : icon,
+              size: 23,
+              color: isSelected ? activeColor : inactiveColor,
+            ),
+
+            const SizedBox(height: 3),
+            //label
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? activeColor : inactiveColor,
+              ),
+            ),
+
+            const SizedBox(height: 3),
+
+            //nav dot
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+
+              width: isSelected ? 4 : 0,
+              height: isSelected ? 4 : 0,
+
+              decoration: const BoxDecoration(
+                color: activeColor,
+                shape: BoxShape.circle,
+              ),
+            ),
           ],
-        );
-
-      case 2:
-        // Cart Screen Header
-        return AppBar(
-          title: const Text('My Shopping Cart'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 1,
-        );
-
-      case 3:
-        // Profile Screen Header
-        return AppBar(
-          title: const Text('Account & Settings'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 1,
-          actions: [
-            IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
-          ],
-        );
-
-      default:
-        return AppBar(title: const Text('Baby Shop'));
-    }
+        ),
+      ),
+    );
   }
 }

@@ -33,7 +33,7 @@ class MySQLService {
 
     List<Product> products = [];
     for (final row in result.rows) {
-      products.add(Product.fromRow(row.assoc()));
+      //products.add(Product.fromRow(row.assoc()));
     }
     return products;
   }

@@ -1,91 +1,231 @@
 import 'package:flutter/material.dart';
-import 'package:baby_shop_hub/utilities/models/product.dart';
+import '../models/product.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
-  final VoidCallback onAddToCart;
 
-  const ProductCard({
-    super.key,
-    required this.product,
-    required this.onAddToCart,
-  });
+  const ProductCard({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    Color badgeColor;
+
+    switch (product.badgeColor) {
+      case 'green':
+        badgeColor = const Color(0xFF19A95A);
+        break;
+
+      case 'red':
+        badgeColor = const Color(0xFFFF3D3D);
+        break;
+
+      case 'blue':
+        badgeColor = const Color(0xFF3685E8);
+        break;
+
+      default:
+        badgeColor = const Color(0xFFFF6600);
+    }
+
+    return Container(
+      width: double.infinity,
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: const Color(0xFFE7E3DF)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+
+      clipBehavior: Clip.antiAlias,
+
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Container with Badge Overlay
           Stack(
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  product.imageUrl,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    height: 120,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.image_not_supported),
+              SizedBox(
+                width: double.infinity,
+                height: 107,
+                child: Image.asset(product.image, fit: BoxFit.cover),
+              ),
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    product.badge,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 7,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
-              if (product.badgeText != null)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      product.badgeText!,
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.92),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.favorite_border_rounded,
+                    size: 14,
+                    color: Color(0xFF7A8190),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF13A765),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    product.discount,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 7,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
+              ),
             ],
           ),
-          
-          // Details Section
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.fromLTRB(8, 6, 7, 6),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.brand.toUpperCase(),
-                  style: const TextStyle(color: Colors.deepOrange, fontSize: 10, fontWeight: FontWeight.bold),
+                  product.brand,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFFF6600),
+                  ),
                 ),
-                const SizedBox(height: 2),
+
+                const SizedBox(height: 3),
+
                 Text(
                   product.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF273143),
+                  ),
                 ),
-                const SizedBox(height: 8),
+
+                const SizedBox(height: 4),
+
+                // =================================================
+                // RATING
+                // =================================================
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '\$${product.price.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      product.rating,
+                      style: const TextStyle(
+                        fontSize: 8,
+                        color: Color(0xFFFFB000),
+                      ),
                     ),
-                    GestureDetector(
-                      onTap: onAddToCart,
-                      child: const CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Colors.deepOrange,
-                        child: Icon(Icons.add, size: 18, color: Colors.white),
+
+                    const SizedBox(width: 4),
+
+                    Text(
+                      '(${product.reviews})',
+                      style: const TextStyle(
+                        fontSize: 7,
+                        color: Color(0xFF9BA1AE),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 5),
+
+                // =================================================
+                // PRICE + ADD BUTTON
+                // =================================================
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Current price
+                    Text(
+                      product.price,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF202938),
+                      ),
+                    ),
+
+                    const SizedBox(width: 5),
+
+                    // Old price
+                    Flexible(
+                      child: Text(
+                        product.oldPrice,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 7.5,
+                          color: Color(0xFFA4A9B2),
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 4),
+
+                    // Add button
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF6600),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 15,
                       ),
                     ),
                   ],
