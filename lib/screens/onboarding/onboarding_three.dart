@@ -16,7 +16,7 @@ class FastSafeDeliveryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFFF8F4),
       body: SafeArea(
         //        child: Center(
         child: SingleChildScrollView(
