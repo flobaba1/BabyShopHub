@@ -35,12 +35,13 @@ class BabyShopApp extends StatelessWidget {
   Widget build(BuildContext context) {
     _initializeMySQL();
     return MaterialApp.router(
-      title: 'Baby Shop E-Commerce',
+      title: 'BabyShopHub',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFFBFBFB),
+        primarySwatch: Colors.orange,
+        scaffoldBackgroundColor: Colors.white,
+        fontFamily:
+            'Roboto', // Default fallback font, change if using custom typography
       ),
       routerConfig: createRouter(initialRoute),
     );
