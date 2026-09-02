@@ -46,3 +46,5 @@ app.*.map.json
 analysis_options.yaml
 pubspec.lock
 android/gradle.properties
+.env
+lib/env/env.g.dart
