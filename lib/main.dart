@@ -1,24 +1,29 @@
+import 'package:baby_shop_hub/screens/Profile/profile_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:baby_shop_hub/core/router.dart';
+import 'screens/onboarding/onboarding.dart';
+import 'screens/Profile/my_orders_screen.dart';
+import 'screens/Profile/track_order_screen.dart';
 
 void main() {
-  runApp(const BabyShopApp());
+  runApp(const MyApp());
 }
 
-class BabyShopApp extends StatelessWidget {
-  const BabyShopApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Baby Shop E-Commerce',
-      debugShowCheckedModeBanner: false,
+    return MaterialApp(
+      title: 'BabyShopHub',
+      debugShowCheckedModeBanner:
+          false, // Removes the red debug banner in the corner
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFFBFBFB),
+        primarySwatch: Colors.orange,
+        scaffoldBackgroundColor: Colors.white,
+        fontFamily:
+            'Roboto', // Default fallback font, change if using custom typography
       ),
-      routerConfig: appRouter,
+      home: const OnboardingScreen(), // Launches your onboarding screen first
     );
   }
 }

@@ -24,7 +24,10 @@ class MySQLService {
   }
 
   // Paginated SQL Query Execution
-  Future<List<Product>> fetchProductsPaginated({required int offset, required int limit}) async {
+  Future<List<Product>> fetchProductsPaginated({
+    required int offset,
+    required int limit,
+  }) async {
     final conn = await connection;
     final result = await conn.execute(
       "SELECT id, name, brand, price, image_url, badge_text FROM products LIMIT :limit OFFSET :offset",
