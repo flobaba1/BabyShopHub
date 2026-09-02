@@ -48,3 +48,4 @@ pubspec.lock
 android/gradle.properties
 .env
 lib/env/env.g.dart
+pubspec.lock
