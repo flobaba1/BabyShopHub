@@ -25,7 +25,7 @@ class ProductCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Image.network(
-                  product.imageUrl,
+                  product.toString(),
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -36,7 +36,7 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (product.badgeText != null)
+              if (product.badge != null)
                 Positioned(
                   top: 8,
                   left: 8,
@@ -47,7 +47,7 @@ class ProductCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      product.badgeText!,
+                      product.badge!,
                       style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -62,7 +62,7 @@ class ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.brand.toUpperCase(),
+                  product.brand ?? 'Unknown Brand',
                   style: const TextStyle(color: Colors.deepOrange, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 2),

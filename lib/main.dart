@@ -1,29 +1,49 @@
-import 'package:baby_shop_hub/screens/Profile/profile_screen.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
 import 'package:flutter/material.dart';
-import 'screens/onboarding/onboarding.dart';
-import 'screens/Profile/my_orders_screen.dart';
-import 'screens/Profile/track_order_screen.dart';
+import 'package:baby_shop_hub/core/router.dart';
+import 'package:baby_shop_hub/core/onboarding_service.dart';
+import 'dart:developer';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Read first-time status before building the UI
+  final bool isFirstTime = await OnboardingService.isFirstTimeUser();
+
+  // 2. Pass the initial route dynamically
+  final String initialRoute = isFirstTime ? '/onboarding' : '/login';
+
+  runApp(BabyShopApp(initialRoute: initialRoute));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class BabyShopApp extends StatelessWidget {
+  final String initialRoute;
+
+  BabyShopApp({super.key, required this.initialRoute});
+
+  final MySQLService mysqlService = MySQLService();
+
+  Future<void> _initializeMySQL() async {
+    try {
+      await mysqlService.connection;
+    } catch (e) {
+      log("Error connecting to MySQL: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    _initializeMySQL();
+    return MaterialApp.router(
       title: 'BabyShopHub',
-      debugShowCheckedModeBanner:
-          false, // Removes the red debug banner in the corner
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.orange,
         scaffoldBackgroundColor: Colors.white,
         fontFamily:
             'Roboto', // Default fallback font, change if using custom typography
       ),
-      home: const ProfileScreen(), // Launches your onboarding screen first
+      routerConfig: createRouter(initialRoute),
     );
   }
 }

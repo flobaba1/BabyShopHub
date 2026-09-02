@@ -3,40 +3,57 @@ import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/screens/auth/login.dart';
 import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
-import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
-
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
+import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart'; // Add this import
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-final GoRouter appRouter = GoRouter(
-  initialLocation: '/login',
-  navigatorKey: _rootNavigatorKey,
-  routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => const SignupScreen(),
-    ),
+GoRouter createRouter(String initialRoute) {
+  return GoRouter(
+    initialLocation: initialRoute,
+    navigatorKey: _rootNavigatorKey,
+    routes: [
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/checkEmail',
+        builder: (context, state) {
+          final email = state.extra as String? ?? 'you@example.com';
+          return CheckEmailScreen(email: email);
+        },
+      ),
 
-    StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) {
-        return MainShell(navigationShell: navigationShell);
-      },
-      branches: [
-        // Tab 1: Home Dashboard
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/home',
-              builder: (context, state) => const DashboardScreen(),
-            ),
-          ],
-        ),
+      // Admin Panel Route
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminPanelScreen(),
+      ),
 
-      ],
-    ),
-  ],
-);
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainShell(navigationShell: navigationShell);
+        },
+        branches: [
+          // Tab 1: Home Dashboard
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+}
