@@ -5,7 +5,8 @@ import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
 import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
 import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
-import 'package:baby_shop_hub/screens/auth/checkEmail.dart'; 
+import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
+import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart'; // Add this import
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -14,10 +15,7 @@ GoRouter createRouter(String initialRoute) {
     initialLocation: initialRoute,
     navigatorKey: _rootNavigatorKey,
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/signup',
         builder: (context, state) => const RegisterScreen(),
@@ -32,6 +30,12 @@ GoRouter createRouter(String initialRoute) {
           final email = state.extra as String? ?? 'you@example.com';
           return CheckEmailScreen(email: email);
         },
+      ),
+
+      // Admin Panel Route
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminPanelScreen(),
       ),
 
       StatefulShellRoute.indexedStack(

@@ -33,5 +33,3 @@ class BabyShopApp extends StatelessWidget {
     );
   }
 }
-
-
