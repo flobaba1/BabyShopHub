@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
         fontFamily:
             'Roboto', // Default fallback font, change if using custom typography
       ),
-      home: const OnboardingScreen(), // Launches your onboarding screen first
+      home: const ProfileScreen(), // Launches your onboarding screen first
     );
   }
 }
