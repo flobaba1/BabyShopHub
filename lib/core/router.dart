@@ -14,7 +14,7 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 GoRouter createRouter(String initialRoute) {
   return GoRouter(
     // Force initialLocation to '/categories' temporarily to test your screen:
-    initialLocation: '/categories', 
+    initialLocation: '/onboarding', 
     navigatorKey: _rootNavigatorKey,
     routes: [
       GoRoute(

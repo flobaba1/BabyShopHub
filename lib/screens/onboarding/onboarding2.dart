@@ -10,9 +10,9 @@ class OnboardingScreenTwo extends StatelessWidget {
     await OnboardingService.completeOnboarding();
 
     // 2. Navigate to Login
-    if (context.mounted) {
-      context.go('/login');
-    }
+    onPressed: () {
+  _finishOnboarding(context);
+},
   }
 
   @override
