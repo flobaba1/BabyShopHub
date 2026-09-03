@@ -37,6 +37,7 @@ class BabyShopApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'BabyShopHub',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const NoStretchScrollBehavior(),
       theme: ThemeData(
         primarySwatch: Colors.orange,
         scaffoldBackgroundColor: Colors.white,
@@ -45,5 +46,18 @@ class BabyShopApp extends StatelessWidget {
       ),
       routerConfig: createRouter(initialRoute),
     );
+  }
+}
+
+class NoStretchScrollBehavior extends MaterialScrollBehavior {
+  const NoStretchScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
   }
 }

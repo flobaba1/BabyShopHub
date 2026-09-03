@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+void main() {
+  runApp(const Onboarding4());
+}
+
+class Onboarding4 extends StatelessWidget {
+  const Onboarding4({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -124,19 +127,14 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Forgot Password
-                GestureDetector(
-                  onTap: () {
-                    context.push('/forgot-password');
-                  },
-                  child: const Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFFF6600),
-                      ),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'Forgot Password?',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFF6600),
                     ),
                   ),
                 ),
@@ -148,9 +146,7 @@ class LoginScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 53,
                   child: ElevatedButton(
-                    onPressed: () {
-                      context.go('/home');
-                    },
+                    onPressed: null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF6600),
                       disabledBackgroundColor: const Color(0xFFFF6600),

@@ -5,11 +5,21 @@ import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/screens/auth/login.dart';
 import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
+import 'package:baby_shop_hub/screens/app/homescreen/homescreen.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/auth/forgotPassword.dart';
+//import 'package:baby_shop_hub/screens/app/products/all_products.dart';
+//import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
 import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
 import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
 import 'package:baby_shop_hub/screens/app/categories/categories.dart';
 import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
 import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding_three.dart';
+import 'package:baby_shop_hub/screens/app/cart/cart.dart';
+import 'package:baby_shop_hub/screens/app/checkout/address.dart';
+import 'package:baby_shop_hub/screens/app/checkout/payment.dart';
+import 'package:baby_shop_hub/screens/app/checkout/review.dart';
 import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
 import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart'; // Add this import
 
@@ -17,10 +27,30 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter createRouter(String initialRoute) {
   return GoRouter(
-    // Force initialLocation to '/categories' temporarily to test your screen:
-    initialLocation: '/onboarding', 
     navigatorKey: _rootNavigatorKey,
+
+    initialLocation: '/login',
+
     routes: [
+      // AUTH / ONBOARDING
+      // GoRoute(
+      //   path: '/products',
+      //   builder: (context, state) {
+      //     return const AllProductsScreen();
+      //   },
+      // ),
+
+      // GoRoute(
+      //   path: '/products/filter',
+      //   builder: (context, state) {
+      //     return const FilteredProductsScreen();
+      //   },
+      // ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPassword(),
+      ),
+
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
@@ -30,9 +60,12 @@ GoRouter createRouter(String initialRoute) {
         path: '/signup',
         builder: (context, state) => const RegisterScreen(),
       ),
-
       GoRoute(
         path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding-two',
         builder: (context, state) => const OnboardingScreenTwo(),
       ),
       GoRoute(
@@ -48,6 +81,11 @@ GoRouter createRouter(String initialRoute) {
         path: '/admin',
         builder: (context, state) => const AdminPanelScreen(),
       ),
+      GoRoute(
+        path: '/onboarding-three',
+        builder: (context, state) => const FastSafeDeliveryScreen(),
+      ),
+
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -62,7 +100,18 @@ GoRouter createRouter(String initialRoute) {
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (context, state) => const DashboardScreen(),
+                builder: (context, state) {
+                  return const HomeScreen();
+                },
+              ),
+            ],
+          ),
+
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/cart',
+                builder: (context, state) => const CartScreen(),
               ),
             ],
           ),
@@ -77,6 +126,19 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
         ],
+      ),
+
+      GoRoute(
+        path: '/checkout/address',
+        builder: (context, state) => const CheckoutAddressScreen(),
+      ),
+      GoRoute(
+        path: '/checkout/payment',
+        builder: (context, state) => const CheckoutPaymentScreen(),
+      ),
+      GoRoute(
+        path: '/checkout/review',
+        builder: (context, state) => const CheckoutReviewScreen(),
       ),
     ],
   );

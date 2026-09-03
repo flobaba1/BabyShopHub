@@ -61,11 +61,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                 ),
                 child: Column(
                   children: [
-                    _buildSelectionRow('Language', 'English >'),
+                    _buildSelectionRow('Language', 'English '),
                     _buildDivider(),
-                    _buildSelectionRow('Currency', 'USD (\$) >'),
+                    _buildSelectionRow('Currency', 'USD (\$) '),
                     _buildDivider(),
-                    _buildSelectionRow('Theme', 'System >'),
+                    _buildSelectionRow('Theme', 'System '),
                   ],
                 ),
               ),

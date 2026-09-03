@@ -91,7 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             itemBuilder: (context, index) {
               return ProductCard(
                 product: _products[index],
-                onAddToCart: () {},
+                //onAddToCart: () {},
               );
             },
           ),

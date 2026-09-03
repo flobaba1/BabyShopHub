@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:baby_shop_hub/core/onboarding_service.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
+
+  Future<void> _finishOnboarding(BuildContext context) async {
+    await OnboardingService.completeOnboarding();
+
+    if (context.mounted) {
+      context.go('/login');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
