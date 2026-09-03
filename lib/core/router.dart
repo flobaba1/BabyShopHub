@@ -10,6 +10,11 @@ import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
 import 'package:baby_shop_hub/screens/app/categories/categories.dart';
 import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
 import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding_three.dart';
+import 'package:baby_shop_hub/screens/app/cart/cart.dart';
+import 'package:baby_shop_hub/screens/app/checkout/address.dart';
+import 'package:baby_shop_hub/screens/app/checkout/payment.dart';
+import 'package:baby_shop_hub/screens/app/checkout/review.dart';
 import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
 import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart'; // Add this import
 
@@ -48,6 +53,11 @@ GoRouter createRouter(String initialRoute) {
         path: '/admin',
         builder: (context, state) => const AdminPanelScreen(),
       ),
+      GoRoute(
+        path: '/onboarding-three',
+        builder: (context, state) => const FastSafeDeliveryScreen(),
+      ),
+
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -67,6 +77,15 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
 
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/cart',
+                builder: (context, state) => const CartScreen(),
+              ),
+            ],
+          ),
+
           // Tab 2: Categories Screen
           StatefulShellBranch(
             routes: [
@@ -77,6 +96,19 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
         ],
+      ),
+
+      GoRoute(
+        path: '/checkout/address',
+        builder: (context, state) => const CheckoutAddressScreen(),
+      ),
+      GoRoute(
+        path: '/checkout/payment',
+        builder: (context, state) => const CheckoutPaymentScreen(),
+      ),
+      GoRoute(
+        path: '/checkout/review',
+        builder: (context, state) => const CheckoutReviewScreen(),
       ),
     ],
   );

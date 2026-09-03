@@ -11,7 +11,8 @@ void main() async {
   final bool isFirstTime = await OnboardingService.isFirstTimeUser();
 
   // 2. Pass the initial route dynamically
-  final String initialRoute = isFirstTime ? '/onboarding' : '/login';
+  //final String initialRoute = isFirstTime ? '/onboarding' : '/login'; 
+  final String initialRoute = '/cart'; // jane :: testing purposes
 
   runApp(BabyShopApp(initialRoute: initialRoute));
 }
