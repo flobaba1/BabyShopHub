@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,18 @@ import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
 import 'package:baby_shop_hub/screens/auth/forgotPassword.dart';
 //import 'package:baby_shop_hub/screens/app/products/all_products.dart';
 //import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
+import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
+import 'package:baby_shop_hub/screens/app/categories/categories.dart';
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding_three.dart';
+import 'package:baby_shop_hub/screens/app/cart/cart.dart';
+import 'package:baby_shop_hub/screens/app/checkout/address.dart';
+import 'package:baby_shop_hub/screens/app/checkout/payment.dart';
+import 'package:baby_shop_hub/screens/app/checkout/review.dart';
+import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
+import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart'; // Add this import
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -38,26 +51,51 @@ GoRouter createRouter(String initialRoute) {
         builder: (context, state) => const ForgotPassword(),
       ),
 
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
 
       GoRoute(
         path: '/signup',
-        builder: (context, state) => const SignupScreen(),
+        builder: (context, state) => const RegisterScreen(),
       ),
-
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
+      GoRoute(
+        path: '/onboarding-two',
+        builder: (context, state) => const OnboardingScreenTwo(),
+      ),
+      GoRoute(
+        path: '/checkEmail',
+        builder: (context, state) {
+          final email = state.extra as String? ?? 'you@example.com';
+          return CheckEmailScreen(email: email);
+        },
+      ),
 
-      //main app shell
+      // Admin Panel Route
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminPanelScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding-three',
+        builder: (context, state) => const FastSafeDeliveryScreen(),
+      ),
+
+
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return MainShell(navigationShell: navigationShell);
+          return MainShell(
+            navigationShell: navigationShell,
+          );
         },
 
         branches: [
-          //home
+          // Tab 1: Home Dashboard
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -69,121 +107,39 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
 
-          //categories
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/categories',
-                builder: (context, state) {
-                  return const CategoriesPlaceholder();
-                },
-              ),
-            ],
-          ),
-
-          //cart
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/cart',
-                builder: (context, state) {
-                  return const CartPlaceholder();
-                },
+                builder: (context, state) => const CartScreen(),
               ),
             ],
           ),
 
-          //orders
+          // Tab 2: Categories Screen
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/orders',
-                builder: (context, state) {
-                  return const OrdersPlaceholder();
-                },
-              ),
-            ],
-          ),
-
-          //profile
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/profile',
-                builder: (context, state) {
-                  return const ProfilePlaceholder();
-                },
+                path: '/categories',
+                builder: (context, state) => const CategoriesScreen(),
               ),
             ],
           ),
         ],
       ),
+
+      GoRoute(
+        path: '/checkout/address',
+        builder: (context, state) => const CheckoutAddressScreen(),
+      ),
+      GoRoute(
+        path: '/checkout/payment',
+        builder: (context, state) => const CheckoutPaymentScreen(),
+      ),
+      GoRoute(
+        path: '/checkout/review',
+        builder: (context, state) => const CheckoutReviewScreen(),
+      ),
     ],
   );
-}
-
-// TEMPORARY PLACEHOLDER SCREENS
-
-class CategoriesPlaceholder extends StatelessWidget {
-  const CategoriesPlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Categories',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class CartPlaceholder extends StatelessWidget {
-  const CartPlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Cart',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class OrdersPlaceholder extends StatelessWidget {
-  const OrdersPlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Orders',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class ProfilePlaceholder extends StatelessWidget {
-  const ProfilePlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Profile',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
 }

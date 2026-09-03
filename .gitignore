@@ -51,4 +51,6 @@ android/java_pid21305.hpro
 # Java heap dumps
 *.hprof
 devtools_options.yaml
+.env
+lib/env/env.g.dart
 pubspec.lock
