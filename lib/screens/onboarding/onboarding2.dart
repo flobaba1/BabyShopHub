@@ -12,7 +12,7 @@ class OnboardingScreenTwo extends StatelessWidget {
     // 2. Navigate to Login
     onPressed: () {
   _finishOnboarding(context);
-},
+};
   }
 
   @override
