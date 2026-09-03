@@ -1,6 +1,8 @@
+import 'package:baby_shop_hub/core/mysql_service.dart';
 import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/core/router.dart';
 import 'package:baby_shop_hub/core/onboarding_service.dart';
+import 'dart:developer';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,17 +20,29 @@ void main() async {
 class BabyShopApp extends StatelessWidget {
   final String initialRoute;
 
-  const BabyShopApp({super.key, required this.initialRoute});
+  BabyShopApp({super.key, required this.initialRoute});
+
+  final MySQLService mysqlService = MySQLService();
+
+  Future<void> _initializeMySQL() async {
+    try {
+      await mysqlService.connection;
+    } catch (e) {
+      log("Error connecting to MySQL: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    _initializeMySQL();
     return MaterialApp.router(
-      title: 'Baby Shop E-Commerce',
+      title: 'BabyShopHub',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFFBFBFB),
+        primarySwatch: Colors.orange,
+        scaffoldBackgroundColor: Colors.white,
+        fontFamily:
+            'Roboto', // Default fallback font, change if using custom typography
       ),
       routerConfig: createRouter(initialRoute),
     );
