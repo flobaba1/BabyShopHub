@@ -13,14 +13,10 @@ class MainShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // ============================================================
-      // MAIN SCREEN
-      // ============================================================
+      //main screen
       body: navigationShell,
 
-      // ============================================================
-      // BOTTOM NAVIGATION
-      // ============================================================
+      //bottom navigation
       bottomNavigationBar: Container(
         height: 70,
 
@@ -34,9 +30,7 @@ class MainShell extends StatelessWidget {
 
           child: Row(
             children: [
-              // ==================================================
-              // HOME
-              // ==================================================
+              //home
               Expanded(
                 child: _BottomNavItem(
                   icon: Icons.home_outlined,
@@ -50,9 +44,7 @@ class MainShell extends StatelessWidget {
                 ),
               ),
 
-              // ==================================================
-              // CATEGORIES
-              // ==================================================
+              //categories
               Expanded(
                 child: _BottomNavItem(
                   icon: Icons.grid_view_outlined,
@@ -66,9 +58,7 @@ class MainShell extends StatelessWidget {
                 ),
               ),
 
-              // ==================================================
-              // CART
-              // ==================================================
+              //cart
               Expanded(
                 child: _BottomNavItem(
                   icon: Icons.shopping_bag_outlined,
@@ -82,9 +72,7 @@ class MainShell extends StatelessWidget {
                 ),
               ),
 
-              // ==================================================
-              // ORDERS
-              // ==================================================
+              //orders
               Expanded(
                 child: _BottomNavItem(
                   icon: Icons.inventory_2_outlined,
@@ -98,9 +86,7 @@ class MainShell extends StatelessWidget {
                 ),
               ),
 
-              // ==================================================
-              // PROFILE
-              // ==================================================
+              //profile
               Expanded(
                 child: _BottomNavItem(
                   icon: Icons.person_outline_rounded,
@@ -121,9 +107,7 @@ class MainShell extends StatelessWidget {
   }
 }
 
-// ==================================================================
-// BOTTOM NAVIGATION ITEM
-// ==================================================================
+//bottom navigation item
 
 class _BottomNavItem extends StatelessWidget {
   final IconData icon;
@@ -151,9 +135,7 @@ class _BottomNavItem extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
 
         children: [
-          // ========================================================
-          // ICON
-          // ========================================================
+          //icons
           Icon(
             isSelected ? activeIcon : icon,
 
@@ -166,9 +148,7 @@ class _BottomNavItem extends StatelessWidget {
 
           const SizedBox(height: 3),
 
-          // ========================================================
-          // LABEL
-          // ========================================================
+          //label
           Text(
             label,
 
@@ -185,9 +165,7 @@ class _BottomNavItem extends StatelessWidget {
 
           const SizedBox(height: 2),
 
-          // ========================================================
-          // ACTIVE INDICATOR
-          // ========================================================
+          //active indicator
           if (isSelected)
             Container(
               width: 4,
