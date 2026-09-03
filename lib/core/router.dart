@@ -5,6 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/screens/auth/login.dart';
 import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
+import 'package:baby_shop_hub/screens/app/homescreen/homescreen.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/auth/forgotPassword.dart';
+//import 'package:baby_shop_hub/screens/app/products/all_products.dart';
+//import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
 import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
 import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
 import 'package:baby_shop_hub/screens/app/categories/categories.dart';
@@ -22,10 +27,30 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter createRouter(String initialRoute) {
   return GoRouter(
-    // Force initialLocation to '/categories' temporarily to test your screen:
-    initialLocation: '/onboarding', 
     navigatorKey: _rootNavigatorKey,
+
+    initialLocation: '/login',
+
     routes: [
+      // AUTH / ONBOARDING
+      // GoRoute(
+      //   path: '/products',
+      //   builder: (context, state) {
+      //     return const AllProductsScreen();
+      //   },
+      // ),
+
+      // GoRoute(
+      //   path: '/products/filter',
+      //   builder: (context, state) {
+      //     return const FilteredProductsScreen();
+      //   },
+      // ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPassword(),
+      ),
+
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
@@ -35,9 +60,12 @@ GoRouter createRouter(String initialRoute) {
         path: '/signup',
         builder: (context, state) => const RegisterScreen(),
       ),
-
       GoRoute(
         path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding-two',
         builder: (context, state) => const OnboardingScreenTwo(),
       ),
       GoRoute(
@@ -72,7 +100,9 @@ GoRouter createRouter(String initialRoute) {
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (context, state) => const DashboardScreen(),
+                builder: (context, state) {
+                  return const HomeScreen();
+                },
               ),
             ],
           ),
