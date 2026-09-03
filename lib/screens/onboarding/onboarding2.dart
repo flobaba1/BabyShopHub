@@ -9,10 +9,9 @@ class OnboardingScreenTwo extends StatelessWidget {
     // 1. Persist the flag so onboarding won't show again
     await OnboardingService.completeOnboarding();
 
-    // 2. Navigate to Login
-    onPressed: () {
-  _finishOnboarding(context);
-};
+ if (context.mounted) {
+      context.go('/login');
+    }
   }
 
   @override
@@ -137,8 +136,9 @@ class OnboardingScreenTwo extends StatelessWidget {
                           child: SizedBox(
                             height: 54,
                             child: OutlinedButton(
-                              onPressed: () {
-                                context.go('/login');
+                             // 2. Navigate to Login
+                                  onPressed: () {
+                                _finishOnboarding(context);
                               },
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: Color(0xFFEEEEEE)),
