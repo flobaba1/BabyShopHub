@@ -89,9 +89,9 @@ class _ProductCardState extends State<ProductCard> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // =====================================================
-            // PRODUCT IMAGE
-            // =====================================================
+
+            //product image
+
             Stack(
               children: [
                 SizedBox(
@@ -100,9 +100,8 @@ class _ProductCardState extends State<ProductCard> {
                   child: _buildProductImage(),
                 ),
 
-                // =================================================
-                // PRODUCT BADGE
-                // =================================================
+               //product badge
+
                 if (product.badge != null &&
                     product.badge!.isNotEmpty)
                   Positioned(
@@ -128,9 +127,8 @@ class _ProductCardState extends State<ProductCard> {
                     ),
                   ),
 
-                // =================================================
-                // FAVOURITE BUTTON
-                // =================================================
+               //favourite button
+
                 Positioned(
                   top: 6,
                   right: 6,
@@ -155,9 +153,8 @@ class _ProductCardState extends State<ProductCard> {
                   ),
                 ),
 
-                // =================================================
-                // DISCOUNT
-                // =================================================
+                //discount
+
                 if (product.discount > 0)
                   Positioned(
                     right: 6,
@@ -184,18 +181,17 @@ class _ProductCardState extends State<ProductCard> {
               ],
             ),
 
-            // =====================================================
-            // PRODUCT INFORMATION
-            // =====================================================
+            //product information
+
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 7, 6),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // =================================================
-                  // BRAND
-                  // =================================================
+
+                  //brand
+
                   if (product.brand != null &&
                       product.brand!.isNotEmpty)
                     Text(
@@ -211,9 +207,8 @@ class _ProductCardState extends State<ProductCard> {
 
                   const SizedBox(height: 3),
 
-                  // =================================================
-                  // PRODUCT NAME
-                  // =================================================
+                //product name
+
                   Text(
                     product.name,
                     maxLines: 2,
@@ -228,9 +223,8 @@ class _ProductCardState extends State<ProductCard> {
 
                   const SizedBox(height: 4),
 
-                  // =================================================
-                  // RATING
-                  // =================================================
+                  //rating
+
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -255,9 +249,7 @@ class _ProductCardState extends State<ProductCard> {
 
                   const SizedBox(height: 5),
 
-                  // =================================================
-                  // PRICE ROW
-                  // =================================================
+                 //price row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -272,9 +264,8 @@ class _ProductCardState extends State<ProductCard> {
 
                       const Spacer(),
 
-                      // =================================================
-                      // ADD BUTTON
-                      // =================================================
+                      //add button
+
                       GestureDetector(
                         onTap: () {
                           // Add-to-cart functionality can be connected
@@ -305,9 +296,7 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  // ===========================================================
-  // PRODUCT IMAGE
-  // ===========================================================
+ //product image
 
   Widget _buildProductImage() {
     if (_isLoadingImage) {
@@ -358,9 +347,7 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  // ===========================================================
-  // RATING STARS
-  // ===========================================================
+  //rating stars
 
   String _buildStars(double rating) {
     final int fullStars = rating.floor().clamp(0, 5);
@@ -369,9 +356,7 @@ class _ProductCardState extends State<ProductCard> {
     return '${'★' * fullStars}${'☆' * emptyStars}';
   }
 
-  // ===========================================================
-  // BADGE COLOR
-  // ===========================================================
+  //badge color
 
   Color _getBadgeColor(String badge) {
     switch (badge.toLowerCase()) {
