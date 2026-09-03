@@ -6,8 +6,9 @@ import 'package:baby_shop_hub/screens/auth/signup.dart';
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
 import 'package:baby_shop_hub/screens/app/homescreen/homescreen.dart';
 import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
-import 'package:baby_shop_hub/screens/app/products/all_products.dart';
-import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
+import 'package:baby_shop_hub/screens/auth/forgotPassword.dart';
+//import 'package:baby_shop_hub/screens/app/products/all_products.dart';
+//import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -15,25 +16,28 @@ GoRouter createRouter(String initialRoute) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
 
-    initialLocation: '/home',
+    initialLocation: '/login',
 
     routes: [
-      // ==========================================================
-      // AUTH / ONBOARDING ROUTES
-      // ==========================================================
+      // AUTH / ONBOARDING
+      // GoRoute(
+      //   path: '/products',
+      //   builder: (context, state) {
+      //     return const AllProductsScreen();
+      //   },
+      // ),
+
+      // GoRoute(
+      //   path: '/products/filter',
+      //   builder: (context, state) {
+      //     return const FilteredProductsScreen();
+      //   },
+      // ),
       GoRoute(
-        path: '/products',
-        builder: (context, state) {
-          return const AllProductsScreen();
-        },
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPassword(),
       ),
 
-      GoRoute(
-        path: '/products/filter',
-        builder: (context, state) {
-          return const FilteredProductsScreen();
-        },
-      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
       GoRoute(
@@ -46,18 +50,14 @@ GoRouter createRouter(String initialRoute) {
         builder: (context, state) => const OnboardingScreen(),
       ),
 
-      // ==========================================================
-      // MAIN APP SHELL
-      // ==========================================================
+      //main app shell
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainShell(navigationShell: navigationShell);
         },
 
         branches: [
-          // ======================================================
-          // 0 - HOME
-          // ======================================================
+          //home
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -69,9 +69,7 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
 
-          // ======================================================
-          // 1 - CATEGORIES
-          // ======================================================
+          //categories
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -83,9 +81,7 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
 
-          // ======================================================
-          // 2 - CART
-          // ======================================================
+          //cart
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -97,9 +93,7 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
 
-          // ======================================================
-          // 3 - ORDERS
-          // ======================================================
+          //orders
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -111,9 +105,7 @@ GoRouter createRouter(String initialRoute) {
             ],
           ),
 
-          // ======================================================
-          // 4 - PROFILE
-          // ======================================================
+          //profile
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -130,11 +122,7 @@ GoRouter createRouter(String initialRoute) {
   );
 }
 
-// ================================================================
 // TEMPORARY PLACEHOLDER SCREENS
-// ================================================================
-// We can replace these with the actual UI screens later.
-// ================================================================
 
 class CategoriesPlaceholder extends StatelessWidget {
   const CategoriesPlaceholder({super.key});

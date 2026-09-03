@@ -13,113 +13,126 @@ class MainShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // The active screen
+      // ============================================================
+      // MAIN SCREEN
+      // ============================================================
       body: navigationShell,
 
-      // Bottom navigation used throughout the main app
-      bottomNavigationBar: _BottomNavigation(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == currentIndex,
-          );
-        },
-      ),
-    );
-  }
-}
-//btm nav
-class _BottomNavigation extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
+      // ============================================================
+      // BOTTOM NAVIGATION
+      // ============================================================
+      bottomNavigationBar: Container(
+        height: 70,
 
-  const _BottomNavigation({required this.currentIndex, required this.onTap});
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFECECEC), width: 1)),
+        ),
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 72,
+        child: SafeArea(
+          top: false,
 
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
-      ),
+          child: Row(
+            children: [
+              // ==================================================
+              // HOME
+              // ==================================================
+              Expanded(
+                child: _BottomNavItem(
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  label: 'Home',
+                  isSelected: currentIndex == 0,
 
-      child: SafeArea(
-        top: false,
-
-        child: Row(
-          children: [
-            // HOME
-            Expanded(
-              child: _NavItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: 'Home',
-                isSelected: currentIndex == 0,
-                onTap: () => onTap(0),
+                  onTap: () {
+                    navigationShell.goBranch(0, initialLocation: true);
+                  },
+                ),
               ),
-            ),
-              //categories
-            Expanded(
-              child: _NavItem(
-                icon: Icons.grid_view_outlined,
-                activeIcon: Icons.grid_view_rounded,
-                label: 'Categories',
-                isSelected: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-            ),
 
-            //cart
-            Expanded(
-              child: _NavItem(
-                icon: Icons.shopping_cart_outlined,
-                activeIcon: Icons.shopping_cart_rounded,
-                label: 'Cart',
-                isSelected: currentIndex == 2,
-                onTap: () => onTap(2),
-              ),
-            ),
+              // ==================================================
+              // CATEGORIES
+              // ==================================================
+              Expanded(
+                child: _BottomNavItem(
+                  icon: Icons.grid_view_outlined,
+                  activeIcon: Icons.grid_view_rounded,
+                  label: 'Categories',
+                  isSelected: currentIndex == 1,
 
-            //orders
-            Expanded(
-              child: _NavItem(
-                icon: Icons.inventory_2_outlined,
-                activeIcon: Icons.inventory_2_rounded,
-                label: 'Orders',
-                isSelected: currentIndex == 3,
-                onTap: () => onTap(3),
+                  // Temporarily empty until the Categories
+                  // branch is added to router.dart.
+                  onTap: () {},
+                ),
               ),
-            ),
 
-           //profile
-            Expanded(
-              child: _NavItem(
-                icon: Icons.person_outline_rounded,
-                activeIcon: Icons.person_rounded,
-                label: 'Profile',
-                isSelected: currentIndex == 4,
-                onTap: () => onTap(4),
+              // ==================================================
+              // CART
+              // ==================================================
+              Expanded(
+                child: _BottomNavItem(
+                  icon: Icons.shopping_bag_outlined,
+                  activeIcon: Icons.shopping_bag_rounded,
+                  label: 'Cart',
+                  isSelected: currentIndex == 2,
+
+                  // Temporarily empty until the Cart
+                  // branch is added to router.dart.
+                  onTap: () {},
+                ),
               ),
-            ),
-          ],
+
+              // ==================================================
+              // ORDERS
+              // ==================================================
+              Expanded(
+                child: _BottomNavItem(
+                  icon: Icons.inventory_2_outlined,
+                  activeIcon: Icons.inventory_2_rounded,
+                  label: 'Orders',
+                  isSelected: currentIndex == 3,
+
+                  // Temporarily empty until the Orders
+                  // branch is added to router.dart.
+                  onTap: () {},
+                ),
+              ),
+
+              // ==================================================
+              // PROFILE
+              // ==================================================
+              Expanded(
+                child: _BottomNavItem(
+                  icon: Icons.person_outline_rounded,
+                  activeIcon: Icons.person_rounded,
+                  label: 'Profile',
+                  isSelected: currentIndex == 4,
+
+                  // Temporarily empty until the Profile
+                  // branch is added to router.dart.
+                  onTap: () {},
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-//nav item
 
-class _NavItem extends StatelessWidget {
+// ==================================================================
+// BOTTOM NAVIGATION ITEM
+// ==================================================================
+
+class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _NavItem({
+  const _BottomNavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
@@ -129,54 +142,63 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color activeColor = Color(0xFFFF6600);
-    const Color inactiveColor = Color(0xFF9AA4B5);
-
     return GestureDetector(
-      onTap: onTap,
-
       behavior: HitTestBehavior.opaque,
 
-      child: SizedBox(
-        height: 72,
+      onTap: onTap,
 
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            //icon
-            Icon(
-              isSelected ? activeIcon : icon,
-              size: 23,
-              color: isSelected ? activeColor : inactiveColor,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+
+        children: [
+          // ========================================================
+          // ICON
+          // ========================================================
+          Icon(
+            isSelected ? activeIcon : icon,
+
+            size: 23,
+
+            color: isSelected
+                ? const Color(0xFFFF6600)
+                : const Color(0xFF9AA2B1),
+          ),
+
+          const SizedBox(height: 3),
+
+          // ========================================================
+          // LABEL
+          // ========================================================
+          Text(
+            label,
+
+            style: TextStyle(
+              fontSize: 10,
+
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+
+              color: isSelected
+                  ? const Color(0xFFFF6600)
+                  : const Color(0xFF9AA2B1),
             ),
+          ),
 
-            const SizedBox(height: 3),
-            //label
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? activeColor : inactiveColor,
-              ),
-            ),
+          const SizedBox(height: 2),
 
-            const SizedBox(height: 3),
-
-            //nav dot
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-
-              width: isSelected ? 4 : 0,
-              height: isSelected ? 4 : 0,
+          // ========================================================
+          // ACTIVE INDICATOR
+          // ========================================================
+          if (isSelected)
+            Container(
+              width: 4,
+              height: 4,
 
               decoration: const BoxDecoration(
-                color: activeColor,
+                color: Color(0xFFFF6600),
                 shape: BoxShape.circle,
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

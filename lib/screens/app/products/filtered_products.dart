@@ -1,167 +1,220 @@
 import 'package:flutter/material.dart';
+
 import '../../../utilities/models/product.dart';
+import '../../../core/mysql_service.dart';
 import '../../../utilities/widgets/product_card.dart';
 
-class FilteredProductsScreen extends StatelessWidget {
-  const FilteredProductsScreen({super.key});
+class FilteredProductsScreen extends StatefulWidget {
+  final String? categoryId;
+  final String? categoryName;
+
+  const FilteredProductsScreen({
+    super.key,
+    this.categoryId,
+    this.categoryName,
+  });
+
+  @override
+  State<FilteredProductsScreen> createState() =>
+      _FilteredProductsScreenState();
+}
+
+class _FilteredProductsScreenState
+    extends State<FilteredProductsScreen> {
+  final MySQLService _mysqlService = MySQLService();
+
+  List<Product> _products = [];
+  List<Product> _displayProducts = [];
+
+  bool _isLoading = true;
+  String? _error;
+
+  String _selectedSort = 'Featured';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    try {
+      List<Product> products;
+
+      if (widget.categoryId != null &&
+          widget.categoryId!.trim().isNotEmpty) {
+        products = await _mysqlService.fetchProductsByCategory(
+          widget.categoryId!,
+        );
+      } else {
+        products = await _mysqlService.fetchProductsPaginated(
+          offset: 0,
+          limit: 100,
+        );
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _products = products;
+        _displayProducts = List<Product>.from(products);
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  void _sortProducts(String sort) {
+    final products = List<Product>.from(_products);
+
+    switch (sort) {
+      case 'Price: Low':
+        products.sort(
+          (a, b) => a.price.compareTo(b.price),
+        );
+        break;
+
+      case 'Price: High':
+        products.sort(
+          (a, b) => b.price.compareTo(a.price),
+        );
+        break;
+
+      case 'Top Rated':
+        products.sort(
+          (a, b) => b.rating.compareTo(a.rating),
+        );
+        break;
+
+      case 'Featured':
+      default:
+        products.sort(
+          (a, b) => b.createdAt.compareTo(a.createdAt),
+        );
+        break;
+    }
+
+    setState(() {
+      _selectedSort = sort;
+      _displayProducts = products;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    final title = widget.categoryName?.trim().isNotEmpty == true
+        ? widget.categoryName!
+        : 'All Products';
 
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9F9F9),
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              height: 66,
-              color: const Color(0xFFFFF9F5),
-              padding: const EdgeInsets.symmetric(horizontal: 19),
-              child: Row(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(17, 14, 17, 0),
+              child: Column(
                 children: [
-                  _circleButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
+                  Row(
+                    children: [
+                      _circleButton(
+                        icon: Icons.arrow_back_rounded,
+                        onTap: () => Navigator.pop(context),
+                      ),
 
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'All Products',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF202938),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF202938),
+                            ),
+                          ),
                         ),
                       ),
+
+                      const SizedBox(width: 36),
+                    ],
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  Container(
+                    height: 45,
+                    padding: const EdgeInsets.symmetric(horizontal: 13),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(
+                        color: const Color(0xFFE7E8EA),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.search_rounded,
+                          size: 20,
+                          color: Color(0xFF9298A3),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Search products...',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFA0A5AE),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  _circleButton(icon: Icons.tune_rounded, onTap: () {}),
-                ],
-              ),
-            ),
+                  const SizedBox(height: 13),
 
-            //search
-            Padding(
-              padding: const EdgeInsets.fromLTRB(19, 12, 19, 9),
-              child: Container(
-                height: 31,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(11),
-                  border: Border.all(color: const Color(0xFFFFE5D2)),
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 10),
-
-                    const Icon(
-                      Icons.search_rounded,
-                      size: 14,
-                      color: Color(0xFFFF6600),
-                    ),
-
-                    const SizedBox(width: 7),
-
-                    const Text(
-                      'Search in All Products...',
-                      style: TextStyle(fontSize: 8, color: Color(0xFF9BA3B1)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // sort box
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 19),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(11),
-                  border: Border.all(color: const Color(0xFFE9E3DD)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Sort By',
-                      style: TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF30394A),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${_displayProducts.length} products found',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFF8D939D),
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 6),
+                  const SizedBox(height: 11),
 
-                    Wrap(
-                      spacing: 5,
-                      runSpacing: 5,
+                  SizedBox(
+                    height: 32,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
                       children: [
-                        _sortChip('Featured', selected: true),
-
+                        _sortChip('Featured'),
+                        const SizedBox(width: 7),
                         _sortChip('Price: Low'),
-
+                        const SizedBox(width: 7),
                         _sortChip('Price: High'),
-
+                        const SizedBox(width: 7),
                         _sortChip('Top Rated'),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            //product count
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 19),
-              child: Row(
-                children: [
-                  Text(
-                    '${products.length} products found',
-                    style: const TextStyle(
-                      fontSize: 8,
-                      color: Color(0xFF6D7482),
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  const Text(
-                    'Sort',
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFFF6600),
-                    ),
-                  ),
-
-                  const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 12,
-                    color: Color(0xFFFF6600),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 7),
+            const SizedBox(height: 10),
 
-            //products
             Expanded(
-              child: SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 19),
-                child: _productColumns(),
-              ),
+              child: _buildBody(),
             ),
           ],
         ),
@@ -169,7 +222,61 @@ class FilteredProductsScreen extends StatelessWidget {
     );
   }
 
-  //product columns
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_outlined,
+              size: 40,
+              color: Color(0xFFFF6600),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Unable to load products',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            TextButton(
+              onPressed: _loadProducts,
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_displayProducts.isEmpty) {
+      return const Center(
+        child: Text(
+          'No products found.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Color(0xFF888E98),
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadProducts,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(17, 0, 17, 20),
+        child: _productColumns(),
+      ),
+    );
+  }
 
   Widget _productColumns() {
     return Row(
@@ -179,10 +286,12 @@ class FilteredProductsScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (int i = 0; i < products.length; i += 2)
+              for (int i = 0; i < _displayProducts.length; i += 2)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: ProductCard(product: products[i]),
+                  child: ProductCard(
+                    product: _displayProducts[i],
+                  ),
                 ),
             ],
           ),
@@ -194,10 +303,12 @@ class FilteredProductsScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (int i = 1; i < products.length; i += 2)
+              for (int i = 1; i < _displayProducts.length; i += 2)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: ProductCard(product: products[i]),
+                  child: ProductCard(
+                    product: _displayProducts[i],
+                  ),
                 ),
             ],
           ),
@@ -206,41 +317,61 @@ class FilteredProductsScreen extends StatelessWidget {
     );
   }
 
-  //sort chip
+  Widget _sortChip(String text) {
+    final selected = _selectedSort == text;
 
-  Widget _sortChip(String text, {bool selected = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFFFF6600) : const Color(0xFFFFF8F3),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 7,
-          fontWeight: FontWeight.w600,
-          color: selected ? Colors.white : const Color(0xFF4E5868),
+    return GestureDetector(
+      onTap: () => _sortProducts(text),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 7,
+        ),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFFFF6600)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFFFF6600)
+                : const Color(0xFFE3E4E7),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.w700,
+            color: selected
+                ? Colors.white
+                : const Color(0xFF656B76),
+          ),
         ),
       ),
     );
   }
 
-  //header icon
-
-  Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _circleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 25,
-        height: 25,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFE8E1DB)),
+          border: Border.all(
+            color: const Color(0xFFE7E8EA),
+          ),
         ),
-        child: Center(
-          child: Icon(icon, size: 12, color: const Color(0xFF697384)),
+        child: Icon(
+          icon,
+          size: 18,
+          color: const Color(0xFF4C5360),
         ),
       ),
     );
