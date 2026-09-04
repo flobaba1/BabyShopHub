@@ -17,6 +17,7 @@ dependencies:
   envied: ^0.5.2
   image_picker: ^1.2.3
   flutter_easyloading: ^4.0.2
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:

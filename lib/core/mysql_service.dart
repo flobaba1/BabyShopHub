@@ -1,13 +1,19 @@
 import 'package:mysql_client/mysql_client.dart';
 import 'package:baby_shop_hub/utilities/models/product.dart';
+import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/utilities/models/user.dart';
 import 'package:baby_shop_hub/utilities/models/cart_item.dart';
 import 'package:baby_shop_hub/utilities/models/category.dart';
 import 'package:baby_shop_hub/utilities/security_helper.dart';
 import 'package:baby_shop_hub/utilities/models/user_card.dart';
 import 'package:baby_shop_hub/utilities/models/wishlist_item.dart';
+import 'package:baby_shop_hub/screens/admin/admin_dashboard_view.dart';
+import 'package:baby_shop_hub/utilities/models/dashboard_models.dart';
+import 'package:baby_shop_hub/utilities/widgets/dashboard_widgets.dart';
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:convert';
+
 import 'package:baby_shop_hub/env/env.dart';
 import 'dart:developer';
 
@@ -75,6 +81,164 @@ class MySQLService {
     return result.affectedRows.toInt() > 0;
   }
 
+  ///  Fetch all registered users
+  Future<List<User>> fetchAllUsers() async {
+    final conn = await connection;
+    final results = await conn.execute(
+      "SELECT id, fullName, email, address, password, status, createdAt, isAdmin FROM Users ORDER BY createdAt DESC",
+    );
+
+    List<User> users = [];
+    for (final row in results.rows) {
+      final Map<String, String?> rowMap = row.assoc();
+      users.add(User.fromRow(rowMap));
+    }
+
+    return users;
+  }
+
+  ///  Fetch total orders count grouped by userId
+  Future<Map<String, int>> fetchUserOrderCounts() async {
+    final conn = await connection;
+    final results = await conn.execute(
+      "SELECT userId, COUNT(*) as total_orders FROM Orders GROUP BY userId",
+    );
+
+    Map<String, int> counts = {};
+    for (final row in results.rows) {
+      final data = row.assoc();
+      final userId = data['userId']?.toString();
+      final total = int.tryParse(data['total_orders'] ?? '0') ?? 0;
+
+      if (userId != null) {
+        counts[userId] = total;
+      }
+    }
+    return counts;
+  }
+
+  ///  Update user status 
+  Future<bool> updateUserStatus(String userId, String status) async {
+    final conn = await connection;
+    final result = await conn.execute(
+      "UPDATE Users SET status = :status WHERE id = :id",
+      {"status": status, "id": userId},
+    );
+
+    return result.affectedRows.toInt() > 0;
+  }
+
+  Future<List<DashboardMetric>> fetchDashboardMetrics() async {
+    final conn = await connection;
+
+    final revResult = await conn.execute(
+      "SELECT COALESCE(SUM(totalAmount), 0) AS total FROM Orders",
+    );
+    final ordersResult = await conn.execute(
+      "SELECT COUNT(*) AS total FROM Orders",
+    );
+    final productsResult = await conn.execute(
+      "SELECT COUNT(*) AS total FROM Products",
+    );
+    final usersResult = await conn.execute(
+      "SELECT COUNT(*) AS total FROM Users",
+    );
+
+    final double totalRevenue =
+        double.tryParse(
+          revResult.rows.first.assoc()['total']?.toString() ?? '0',
+        ) ??
+        0.0;
+    final int totalOrders =
+        int.tryParse(
+          ordersResult.rows.first.assoc()['total']?.toString() ?? '0',
+        ) ??
+        0;
+    final int totalProducts =
+        int.tryParse(
+          productsResult.rows.first.assoc()['total']?.toString() ?? '0',
+        ) ??
+        0;
+    final int totalUsers =
+        int.tryParse(
+          usersResult.rows.first.assoc()['total']?.toString() ?? '0',
+        ) ??
+        0;
+
+    return [
+      DashboardMetric(
+        icon: Icons.trending_up_rounded,
+        iconColor: const Color(0xFF16A34A),
+        iconBg: const Color(0xFFDCFCE7),
+        value: '\$${totalRevenue.toStringAsFixed(0)}',
+        label: 'Revenue',
+        subtext: 'Total revenue',
+      ),
+      DashboardMetric(
+        icon: Icons.shopping_bag_outlined,
+        iconColor: const Color(0xFF2563EB),
+        iconBg: const Color(0xFFDBEAFE),
+        value: '$totalOrders',
+        label: 'Orders',
+        subtext: 'Total placed',
+      ),
+      DashboardMetric(
+        icon: Icons.inventory_2_outlined,
+        iconColor: const Color(0xFF9333EA),
+        iconBg: const Color(0xFFF3E8FF),
+        value: '$totalProducts',
+        label: 'Products',
+        subtext: 'Active listings',
+      ),
+      DashboardMetric(
+        icon: Icons.people_outline_rounded,
+        iconColor: const Color(0xFFEA580C),
+        iconBg: const Color(0xFFFFEDD5),
+        value: '$totalUsers',
+        label: 'Users',
+        subtext: 'Registered users',
+      ),
+    ];
+  }
+
+  // Fetch recent 5 orders from MySQL
+  Future<List<RecentOrder>> fetchRecentOrders() async {
+    final conn = await connection;
+    final results = await conn.execute(
+      "SELECT id, createdAt, status, totalAmount FROM Orders ORDER BY createdAt DESC LIMIT 5",
+    );
+
+    return results.rows.map((row) {
+      final data = row.assoc();
+      final status = data['status']?.toString() ?? 'Pending';
+
+      Color bg = const Color(0xFFFEF3C7);
+      Color text = const Color(0xFFD97706);
+
+      if (status.toLowerCase() == 'delivered') {
+        bg = const Color(0xFFDCFCE7);
+        text = const Color(0xFF16A34A);
+      } else if (status.toLowerCase() == 'shipped') {
+        bg = const Color(0xFFF3E8FF);
+        text = const Color(0xFF9333EA);
+      } else if (status.toLowerCase() == 'cancelled') {
+        bg = const Color(0xFFFEE2E2);
+        text = const Color(0xFFDC2626);
+      }
+
+      return RecentOrder(
+        id: data['id']?.toString() ?? '',
+        date: data['created_at']?.toString().split(' ')[0] ?? '',
+        status: status,
+        price: '\$${data['total_amount']?.toString() ?? '0'}',
+        statusBg: bg,
+        statusText: text,
+      );
+    }).toList();
+  }
+
+  /// Verify User credentials during Login
+  /// Throws an [Exception] with specific details if authentication fails.
   Future<User> authenticateUser({
     required String email,
     required String plainPassword,
@@ -103,11 +267,11 @@ class MySQLService {
       );
     }
 
+    // 3. Invalid password
     final bool isPasswordValid = SecurityHelper.verifyPassword(
       plainPassword,
       storedHash,
     );
-
     if (!isPasswordValid) {
       throw Exception("Invalid password. Please try again.");
     }
@@ -201,7 +365,6 @@ class MySQLService {
       final currentQty = int.parse(
         existing.rows.first.assoc()['quantity'] ?? '0',
       );
-
       final result = await conn.execute(
         "UPDATE CartItems SET quantity = :quantity WHERE id = :id",
         {
@@ -235,6 +398,17 @@ class MySQLService {
     return result.rows.map((row) => CartItem.fromRow(row.assoc())).toList();
   }
 
+  // fetch categories
+  Future<List<Category>> fetchCategories() async {
+    final conn = await connection;
+    final result = await conn.execute(
+      "SELECT id, name FROM Categories ORDER BY name ASC",
+    );
+
+    return result.rows.map((row) => Category.fromRow(row.assoc())).toList();
+  }
+
+  /// Update Cart Item Quantity
   Future<bool> updateCartQuantity(String cartItemId, int quantity) async {
     if (quantity <= 0) {
       return deleteCartItem(cartItemId);
@@ -252,11 +426,9 @@ class MySQLService {
 
   Future<bool> deleteCartItem(String cartItemId) async {
     final conn = await connection;
-
     final result = await conn.execute("DELETE FROM CartItems WHERE id = :id", {
       "id": cartItemId,
     });
-
     return result.affectedRows.toInt() > 0;
   }
 
@@ -342,11 +514,52 @@ class MySQLService {
     );
 
     if (result.rows.isEmpty) {
-      throw Exception("Product with ID '$productId' was not found.");
+      return null;
     }
 
-    final row = result.rows.first;
-    return row.colAt(0) as Uint8List?;
+    final dynamic rawImage = result.rows.first.colAt(0);
+
+    if (rawImage == null) {
+      return null;
+    }
+
+    // If database already returns real binary bytes
+    if (rawImage is Uint8List) {
+      return rawImage;
+    }
+
+    // If database returns List<int>
+    if (rawImage is List<int>) {
+      return Uint8List.fromList(rawImage);
+    }
+
+    if (rawImage is String) {
+      final text = rawImage.trim();
+
+      if (text.startsWith('[') && text.endsWith(']')) {
+        try {
+          final cleaned = text.substring(1, text.length - 1);
+
+          final bytes = cleaned
+              .split(',')
+              .map((value) => int.parse(value.trim()))
+              .toList();
+
+          return Uint8List.fromList(bytes);
+        } catch (e) {
+          log("Failed to convert image list: $e");
+          return null;
+        }
+      }
+
+      try {
+        return base64Decode(text);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   Future<List<Product>> fetchProductsPaginated({
@@ -356,14 +569,17 @@ class MySQLService {
     final conn = await connection;
 
     final result = await conn.execute(
-      "SELECT id, name, categoryId, price, quantity, brand, badge, rating, "
-      "discount, description, createdAt "
-      "FROM Products ORDER BY createdAt DESC "
+      "SELECT id, name, categoryId, price, quantity, brand, badge, "
+      "rating, discount, description, createdAt "
+      "FROM Products "
+      "ORDER BY createdAt DESC "
       "LIMIT :limit OFFSET :offset",
       {"limit": limit, "offset": offset},
     );
 
-    return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
+    return result.rows.map((row) {
+      return Product.fromRow(row.assoc());
+    }).toList();
   }
 
   Future<List<Product>> fetchProductsByCategory(String categoryId) async {
@@ -380,6 +596,7 @@ class MySQLService {
     return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
   }
 
+  /// Update or Upload Product Image BLOB
   Future<bool> updateProduct({
     required String id,
     required String name,
@@ -391,10 +608,22 @@ class MySQLService {
     double? rating,
     double? discount,
     String? description,
+    Uint8List? imageBytes,
   }) async {
     final conn = await connection;
 
-    final result = await conn.execute(
+    // Check if product exists
+    final checkResult = await conn.execute(
+      "SELECT id FROM Products WHERE id = :id",
+      {"id": id},
+    );
+
+    if (checkResult.rows.isEmpty) {
+      throw Exception("Product ID '$id' does not exist in the Products table.");
+    }
+
+    // Update normal product information
+    await conn.execute(
       "UPDATE Products SET "
       "name = :name, "
       "categoryId = :categoryId, "
@@ -420,30 +649,12 @@ class MySQLService {
       },
     );
 
-    if (result.affectedRows.toInt() == 0) {
-      throw Exception(
-        "Failed to update product. Product ID '$id' does not exist.",
-      );
-    }
-
-    return true;
-  }
-
-  Future<bool> updateProductImage({
-    required String productId,
-    required Uint8List imageBytes,
-  }) async {
-    final conn = await connection;
-
-    final result = await conn.execute(
-      "UPDATE Products SET image = :image WHERE id = :id",
-      {"id": productId, "image": imageBytes},
-    );
-
-    if (result.affectedRows.toInt() == 0) {
-      throw Exception(
-        "Failed to upload image. Product ID '$productId' does not exist.",
-      );
+    // Update image only if the user selected a new image
+    if (imageBytes != null) {
+      await conn.execute("UPDATE Products SET image = :image WHERE id = :id", {
+        "id": id,
+        "image": imageBytes,
+      });
     }
 
     return true;
@@ -527,7 +738,6 @@ class MySQLService {
 
   Future<bool> deleteUserCard(String cardId) async {
     final conn = await connection;
-
     final result = await conn.execute("DELETE FROM UserCards WHERE id = :id", {
       "id": cardId,
     });
@@ -619,7 +829,6 @@ class MySQLService {
       userId: userId,
       productId: productId,
     );
-
     if (exists) {
       return await removeFromWishlist(userId: userId, productId: productId);
     } else {
