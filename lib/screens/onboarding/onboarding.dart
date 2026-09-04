@@ -34,8 +34,8 @@ class OnboardingScreen extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.1),
-                        Colors.black.withOpacity(0.6),
+                        Colors.black.withValues(alpha: 0.1),
+                        Colors.black.withValues(alpha: 0.6),
                       ],
                     ),
                   ),
@@ -72,7 +72,7 @@ class OnboardingScreen extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             height: 1.35,
                           ),
                         ),
@@ -159,7 +159,7 @@ class OnboardingScreen extends StatelessWidget {
                               BoxShadow(
                                 color: const Color(
                                   0xFFFF6600,
-                                ).withOpacity(0.25),
+                                ).withValues(alpha: 0.25),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),

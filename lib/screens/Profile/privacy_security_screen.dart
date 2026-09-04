@@ -187,5 +187,5 @@ class PrivacySecurityScreen extends StatelessWidget {
   }
 
   Widget _buildDivider() =>
-      Divider(height: 1, indent: 56, color: Colors.grey.withOpacity(0.15));
+      Divider(height: 1, indent: 56, color: Colors.grey.withValues(alpha: 0.15));
 }

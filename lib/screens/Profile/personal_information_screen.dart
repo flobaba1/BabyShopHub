@@ -36,9 +36,9 @@ class PersonalInformationScreen extends StatelessWidget {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.orange.withOpacity(0.2), width: 2),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.2), width: 2),
                       ),
                       child: const Center(
                         child: Text(
@@ -68,7 +68,7 @@ class PersonalInformationScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey.withOpacity(0.08)),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
                 ),
                 child: Column(
                   children: [
@@ -137,6 +137,6 @@ class PersonalInformationScreen extends StatelessWidget {
 
   Widget _buildDivider() => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Divider(height: 1, color: Colors.grey.withOpacity(0.08)),
+        child: Divider(height: 1, color: Colors.grey.withValues(alpha: 0.08)),
       );
 }

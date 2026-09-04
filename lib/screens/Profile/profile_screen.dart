@@ -32,7 +32,7 @@ class ProfileScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.grey.withOpacity(0.06)),
+                      border: Border.all(color: Colors.grey.withValues(alpha: 0.06)),
                     ),
                     child: Column(
                       children: [
@@ -171,7 +171,7 @@ class ProfileScreen extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Center(
@@ -202,7 +202,7 @@ class ProfileScreen extends StatelessWidget {
                     Text(
                       'emma@example.com',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 13,
                       ),
                     ),
@@ -213,7 +213,7 @@ class ProfileScreen extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.25),
+                        color: Colors.white.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -300,7 +300,7 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.06)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.06)),
       ),
       child: Row(
         children: [
@@ -340,8 +340,8 @@ class ProfileScreen extends StatelessWidget {
           Switch(
             value: true,
             onChanged: (val) {},
-            activeColor: Colors.orange,
-            activeTrackColor: Colors.orange.withOpacity(0.3),
+            activeThumbColor: Colors.orange,
+            activeTrackColor: Colors.orange.withValues(alpha: 0.3),
           ),
         ],
       ),
@@ -389,7 +389,7 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFBF4FF),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.purple.withOpacity(0.08)),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.08)),
       ),
       child: ListTile(
         leading: Container(
@@ -457,6 +457,6 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildDivider() => Padding(
     padding: const EdgeInsets.only(left: 70.0, right: 14),
-    child: Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+    child: Divider(height: 1, color: Colors.grey.withValues(alpha: 0.1)),
   );
 }

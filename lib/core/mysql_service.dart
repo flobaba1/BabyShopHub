@@ -2,7 +2,6 @@ import 'package:mysql_client/mysql_client.dart';
 import 'package:baby_shop_hub/utilities/models/product.dart';
 import 'package:baby_shop_hub/utilities/models/user.dart';
 import 'package:baby_shop_hub/utilities/models/cart_item.dart';
-import 'package:baby_shop_hub/utilities/models/category.dart';
 import 'package:baby_shop_hub/utilities/security_helper.dart';
 import 'package:baby_shop_hub/utilities/models/user_card.dart';
 import 'package:baby_shop_hub/utilities/models/wishlist_item.dart';
@@ -98,11 +97,16 @@ class MySQLService {
 
     // 2. Inactive account
     if (userStatus != 'Active') {
-      throw Exception("Your account is currently inactive. Please contact support.");
+      throw Exception(
+        "Your account is currently inactive. Please contact support.",
+      );
     }
 
     // 3. Invalid password
-    final bool isPasswordValid = SecurityHelper.verifyPassword(plainPassword, storedHash);
+    final bool isPasswordValid = SecurityHelper.verifyPassword(
+      plainPassword,
+      storedHash,
+    );
     if (!isPasswordValid) {
       throw Exception("Invalid password. Please try again.");
     }
@@ -118,10 +122,7 @@ class MySQLService {
     final conn = await connection;
     final result = await conn.execute(
       "UPDATE Users SET image = :image WHERE id = :id",
-      {
-        "id": userId,
-        "image": imageBytes,
-      },
+      {"id": userId, "image": imageBytes},
     );
     return result.affectedRows.toInt() > 0;
   }
@@ -145,77 +146,182 @@ class MySQLService {
   // CART ITEMS CRUD
   // ===========================================================================
 
-  /// Add Item to Cart (or increment quantity if already exists)
+  // ============================================================
+  // CART ITEMS CRUD
+  // ============================================================
+
   Future<bool> addToCart({
     required String userId,
     required String productId,
     int quantity = 1,
   }) async {
+    if (quantity <= 0) {
+      throw Exception('Quantity must be greater than zero.');
+    }
+
     final conn = await connection;
 
-    // Check if item already exists in cart for this user
-    final existing = await conn.execute(
-      "SELECT id, quantity FROM CartItems WHERE userId = :userId AND productId = :productId",
-      {"userId": userId, "productId": productId},
+    // Get product stock and existing cart quantity.
+    final result = await conn.execute(
+      '''
+    SELECT
+      p.quantity AS stockQuantity,
+      c.id AS cartItemId,
+      c.quantity AS cartQuantity
+    FROM Products p
+    LEFT JOIN CartItems c
+      ON c.productId = p.id
+      AND c.userId = :userId
+    WHERE p.id = :productId
+    ''',
+      {'userId': userId, 'productId': productId},
     );
 
-    if (existing.rows.isNotEmpty) {
-      final currentQty = int.parse(existing.rows.first.assoc()['quantity'] ?? '0');
-      final result = await conn.execute(
-        "UPDATE CartItems SET quantity = :quantity WHERE id = :id",
-        {"quantity": currentQty + quantity, "id": existing.rows.first.assoc()['id']},
-      );
-      return result.affectedRows.toInt() > 0;
-    } else {
-      final result = await conn.execute(
-        "INSERT INTO CartItems (id, productId, userId, quantity) VALUES (UUID(), :productId, :userId, :quantity)",
-        {"productId": productId, "userId": userId, "quantity": quantity},
-      );
-      return result.affectedRows.toInt() > 0;
+    if (result.rows.isEmpty) {
+      throw Exception('Product not found.');
     }
+
+    final row = result.rows.first.assoc();
+
+    final stockQuantity = int.tryParse(row['stockQuantity'] ?? '0') ?? 0;
+
+    final existingCartQuantity = int.tryParse(row['cartQuantity'] ?? '0') ?? 0;
+
+    if (stockQuantity <= 0) {
+      throw Exception('This product is out of stock.');
+    }
+
+    final newQuantity = existingCartQuantity + quantity;
+
+    if (newQuantity > stockQuantity) {
+      final remaining = stockQuantity - existingCartQuantity;
+
+      if (remaining <= 0) {
+        throw Exception(
+          'You already have the maximum available quantity in your cart.',
+        );
+      }
+
+      throw Exception('Only $remaining more item(s) available in stock.');
+    }
+
+    // Product already exists in cart.
+    if (row['cartItemId'] != null) {
+      final updateResult = await conn.execute(
+        '''
+      UPDATE CartItems
+      SET quantity = :quantity
+      WHERE id = :id
+      ''',
+        {'quantity': newQuantity, 'id': row['cartItemId']},
+      );
+
+      return updateResult.affectedRows.toInt() > 0;
+    }
+
+    // Product does not exist in cart.
+    final insertResult = await conn.execute(
+      '''
+    INSERT INTO CartItems
+      (id, productId, userId, quantity)
+    VALUES
+      (UUID(), :productId, :userId, :quantity)
+    ''',
+      {'productId': productId, 'userId': userId, 'quantity': quantity},
+    );
+
+    return insertResult.affectedRows.toInt() > 0;
   }
 
-  /// Get All Cart Items for a User
   Future<List<CartItem>> getUserCart(String userId) async {
     final conn = await connection;
+
     final result = await conn.execute(
-      "SELECT id, productId, userId, quantity, createdAt FROM CartItems WHERE userId = :userId",
-      {"userId": userId},
+      '''
+    SELECT
+      id,
+      productId,
+      userId,
+      quantity,
+      createdAt
+    FROM CartItems
+    WHERE userId = :userId
+    ORDER BY createdAt DESC
+    ''',
+      {'userId': userId},
     );
 
     return result.rows.map((row) => CartItem.fromRow(row.assoc())).toList();
   }
 
-  /// Update Cart Item Quantity
   Future<bool> updateCartQuantity(String cartItemId, int quantity) async {
     final conn = await connection;
+
     if (quantity <= 0) {
       return deleteCartItem(cartItemId);
     }
-    final result = await conn.execute(
-      "UPDATE CartItems SET quantity = :quantity WHERE id = :id",
-      {"quantity": quantity, "id": cartItemId},
+
+    // Make sure the requested quantity does not exceed stock.
+    final stockResult = await conn.execute(
+      '''
+    SELECT p.quantity AS stockQuantity
+    FROM CartItems c
+    INNER JOIN Products p
+      ON p.id = c.productId
+    WHERE c.id = :cartItemId
+    ''',
+      {'cartItemId': cartItemId},
     );
+
+    if (stockResult.rows.isEmpty) {
+      return false;
+    }
+
+    final stockQuantity =
+        int.tryParse(stockResult.rows.first.assoc()['stockQuantity'] ?? '0') ??
+        0;
+
+    if (quantity > stockQuantity) {
+      throw Exception('Only $stockQuantity item(s) available in stock.');
+    }
+
+    final result = await conn.execute(
+      '''
+    UPDATE CartItems
+    SET quantity = :quantity
+    WHERE id = :id
+    ''',
+      {'quantity': quantity, 'id': cartItemId},
+    );
+
     return result.affectedRows.toInt() > 0;
   }
 
-  /// Remove Single Item from Cart
   Future<bool> deleteCartItem(String cartItemId) async {
     final conn = await connection;
+
     final result = await conn.execute(
-      "DELETE FROM CartItems WHERE id = :id",
-      {"id": cartItemId},
+      '''
+    DELETE FROM CartItems
+    WHERE id = :id
+    ''',
+      {'id': cartItemId},
     );
+
     return result.affectedRows.toInt() > 0;
   }
 
-  /// Clear Entire Cart for a User
   Future<bool> clearUserCart(String userId) async {
     final conn = await connection;
+
     final result = await conn.execute(
-      "DELETE FROM CartItems WHERE userId = :userId",
-      {"userId": userId},
+      '''
+    DELETE FROM CartItems
+    WHERE userId = :userId
+    ''',
+      {'userId': userId},
     );
+
     return result.affectedRows.toInt() > 0;
   }
 
@@ -365,7 +471,9 @@ class MySQLService {
     );
 
     if (result.affectedRows.toInt() == 0) {
-      throw Exception("Failed to update product. Product ID '$id' does not exist.");
+      throw Exception(
+        "Failed to update product. Product ID '$id' does not exist.",
+      );
     }
 
     return true;
@@ -380,14 +488,13 @@ class MySQLService {
 
     final result = await conn.execute(
       "UPDATE Products SET image = :image WHERE id = :id",
-      {
-        "id": productId,
-        "image": imageBytes,
-      },
+      {"id": productId, "image": imageBytes},
     );
 
     if (result.affectedRows.toInt() == 0) {
-      throw Exception("Failed to upload image. Product ID '$productId' does not exist.");
+      throw Exception(
+        "Failed to upload image. Product ID '$productId' does not exist.",
+      );
     }
 
     return true;
@@ -397,16 +504,48 @@ class MySQLService {
   Future<bool> deleteProduct(String id) async {
     final conn = await connection;
 
-    final result = await conn.execute(
-      "DELETE FROM Products WHERE id = :id",
-      {"id": id},
-    );
+    final result = await conn.execute("DELETE FROM Products WHERE id = :id", {
+      "id": id,
+    });
 
     if (result.affectedRows.toInt() == 0) {
-      throw Exception("Failed to delete product. Product ID '$id' was not found.");
+      throw Exception(
+        "Failed to delete product. Product ID '$id' was not found.",
+      );
     }
 
     return true;
+  }
+
+  // ===========================================================================
+  // CATEGORIES
+  // ===========================================================================
+
+  /// Fetch all categories with the number of products in each category
+  Future<List<Map<String, dynamic>>> getCategoriesWithProductCount() async {
+    final conn = await connection;
+
+    final result = await conn.execute('''
+    SELECT 
+        c.id,
+        c.name AS category,
+        COUNT(p.id) AS product_count
+    FROM Categories c
+    LEFT JOIN Products p 
+        ON p.categoryId = c.id
+    GROUP BY c.id, c.name
+    ORDER BY c.name
+  ''');
+
+    return result.rows.map((row) {
+      final data = row.assoc();
+
+      return {
+        'id': data['id'],
+        'name': data['category'],
+        'count': int.tryParse(data['product_count'] ?? '0') ?? 0,
+      };
+    }).toList();
   }
 
   // ===========================================================================
@@ -471,13 +610,14 @@ class MySQLService {
   /// Remove a saved card by ID
   Future<bool> deleteUserCard(String cardId) async {
     final conn = await connection;
-    final result = await conn.execute(
-      "DELETE FROM UserCards WHERE id = :id",
-      {"id": cardId},
-    );
+    final result = await conn.execute("DELETE FROM UserCards WHERE id = :id", {
+      "id": cardId,
+    });
 
     if (result.affectedRows.toInt() == 0) {
-      throw Exception("Failed to delete card. Card ID '$cardId' was not found.");
+      throw Exception(
+        "Failed to delete card. Card ID '$cardId' was not found.",
+      );
     }
 
     return true;
@@ -499,10 +639,7 @@ class MySQLService {
         "INSERT INTO UserWishlist (id, userId, productId) "
         "VALUES (UUID(), :userId, :productId) "
         "ON DUPLICATE KEY UPDATE id = id",
-        {
-          "userId": userId,
-          "productId": productId,
-        },
+        {"userId": userId, "productId": productId},
       );
       return result.affectedRows.toInt() > 0;
     } catch (e) {
@@ -529,10 +666,7 @@ class MySQLService {
     final conn = await connection;
     final result = await conn.execute(
       "SELECT id FROM UserWishlist WHERE userId = :userId AND productId = :productId",
-      {
-        "userId": userId,
-        "productId": productId,
-      },
+      {"userId": userId, "productId": productId},
     );
 
     return result.rows.isNotEmpty;
@@ -546,10 +680,7 @@ class MySQLService {
     final conn = await connection;
     final result = await conn.execute(
       "DELETE FROM UserWishlist WHERE userId = :userId AND productId = :productId",
-      {
-        "userId": userId,
-        "productId": productId,
-      },
+      {"userId": userId, "productId": productId},
     );
 
     if (result.affectedRows.toInt() == 0) {
@@ -564,17 +695,17 @@ class MySQLService {
     required String userId,
     required String productId,
   }) async {
-    final bool exists = await isProductInWishlist(userId: userId, productId: productId);
+    final bool exists = await isProductInWishlist(
+      userId: userId,
+      productId: productId,
+    );
     if (exists) {
       return await removeFromWishlist(userId: userId, productId: productId);
     } else {
       return await addToWishlist(userId: userId, productId: productId);
     }
   }
-
-  // ===========================================================================
   // DISPOSAL AND CONNECTION MANAGEMENT
-  // ===========================================================================
 
   Future<void> _closeConnection() async {
     if (_connection != null && _connection!.connected) {
@@ -587,4 +718,415 @@ class MySQLService {
     _idleTimer?.cancel();
     await _closeConnection();
   }
+
+
+// ORDERS & CHECKOUT
+
+
+Future<Map<String, dynamic>> getCheckoutItems({
+  required String userId,
+  required List<String> cartItemIds,
+}) async {
+  if (cartItemIds.isEmpty) {
+    throw Exception('No items selected for checkout.');
+  }
+
+  final conn = await connection;
+
+  final placeholders = List.generate(
+    cartItemIds.length,
+    (index) => ':cartId$index',
+  ).join(', ');
+
+  final params = <String, dynamic>{
+    'userId': userId,
+  };
+
+  for (int i = 0; i < cartItemIds.length; i++) {
+    params['cartId$i'] = cartItemIds[i];
+  }
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      c.id AS cartItemId,
+      c.productId,
+      c.quantity AS cartQuantity,
+
+      p.name,
+      p.price,
+      p.quantity AS stockQuantity,
+      p.discount,
+      p.description
+
+    FROM CartItems c
+
+    INNER JOIN Products p
+      ON p.id = c.productId
+
+    WHERE c.userId = :userId
+      AND c.id IN ($placeholders)
+
+    ORDER BY c.createdAt DESC
+    ''',
+    params,
+  );
+
+  return {
+    'rows': result.rows,
+  };
+}
+
+
+Future<String> createOrder({
+  required String userId,
+  required List<String> cartItemIds,
+  required String shippingAddress,
+  required String paymentMethod,
+  String? notes,
+}) async {
+  if (cartItemIds.isEmpty) {
+    throw Exception('No items selected for checkout.');
+  }
+
+  final conn = await connection;
+
+  try {
+    // ------------------------------------------------------------
+    // START TRANSACTION
+    // ------------------------------------------------------------
+    await conn.execute('START TRANSACTION');
+
+    final placeholders = List.generate(
+      cartItemIds.length,
+      (index) => ':cartId$index',
+    ).join(', ');
+
+    final params = <String, dynamic>{
+      'userId': userId,
+    };
+
+    for (int i = 0; i < cartItemIds.length; i++) {
+      params['cartId$i'] = cartItemIds[i];
+    }
+
+    // ------------------------------------------------------------
+    // GET SELECTED CART ITEMS + CURRENT PRODUCT PRICES/STOCK
+    // ------------------------------------------------------------
+    final cartResult = await conn.execute(
+      '''
+      SELECT
+        c.id AS cartItemId,
+        c.productId,
+        c.quantity AS cartQuantity,
+
+        p.price,
+        p.quantity AS stockQuantity,
+        p.discount
+
+      FROM CartItems c
+
+      INNER JOIN Products p
+        ON p.id = c.productId
+
+      WHERE c.userId = :userId
+        AND c.id IN ($placeholders)
+      ''',
+      params,
+    );
+
+    if (cartResult.rows.isEmpty) {
+      throw Exception(
+        'The selected cart items could not be found.',
+      );
+    }
+
+    // Make sure every selected cart item still exists.
+    if (cartResult.rows.length != cartItemIds.length) {
+      throw Exception(
+        'One or more selected cart items are no longer available.',
+      );
+    }
+
+    double subtotal = 0.0;
+    double totalDiscount = 0.0;
+
+    final orderItems = <Map<String, dynamic>>[];
+
+    // ------------------------------------------------------------
+    // VALIDATE STOCK + CALCULATE TOTALS
+    // ------------------------------------------------------------
+    for (final row in cartResult.rows) {
+      final data = row.assoc();
+
+      final cartItemId = data['cartItemId'] ?? '';
+      final productId = data['productId'] ?? '';
+
+      final quantity =
+          int.tryParse(data['cartQuantity'] ?? '0') ?? 0;
+
+      final stockQuantity =
+          int.tryParse(data['stockQuantity'] ?? '0') ?? 0;
+
+      final unitPrice =
+          double.tryParse(data['price'] ?? '0') ?? 0.0;
+
+      final discountPercentage =
+          double.tryParse(data['discount'] ?? '0') ?? 0.0;
+
+      if (quantity <= 0) {
+        throw Exception(
+          'Invalid quantity for product $productId.',
+        );
+      }
+
+      if (stockQuantity <= 0) {
+        throw Exception(
+          'One of the selected products is out of stock.',
+        );
+      }
+
+      if (quantity > stockQuantity) {
+        throw Exception(
+          'Only $stockQuantity item(s) remain in stock for one of your selected products.',
+        );
+      }
+
+      final itemSubtotal = unitPrice * quantity;
+
+      final itemDiscount =
+          itemSubtotal * (discountPercentage / 100);
+
+      final itemTotal =
+          itemSubtotal - itemDiscount;
+
+      subtotal += itemSubtotal;
+      totalDiscount += itemDiscount;
+
+      orderItems.add({
+        'cartItemId': cartItemId,
+        'productId': productId,
+        'quantity': quantity,
+        'unitPrice': unitPrice,
+        'discount': itemDiscount,
+        'totalPrice': itemTotal,
+      });
+    }
+
+    // ------------------------------------------------------------
+    // SHIPPING
+    // ------------------------------------------------------------
+    //
+    // Your current cart implementation uses a delivery fee of 0
+    // because the actual business rule has not been defined yet.
+    //
+    const double shippingFee = 0.0;
+
+    final totalAmount =
+        subtotal - totalDiscount + shippingFee;
+
+    // ------------------------------------------------------------
+    // GENERATE ORDER ID
+    // ------------------------------------------------------------
+    final uuidResult = await conn.execute(
+      'SELECT UUID() AS orderId',
+    );
+
+    if (uuidResult.rows.isEmpty) {
+      throw Exception('Unable to generate order ID.');
+    }
+
+    final orderId =
+        uuidResult.rows.first.assoc()['orderId'] ?? '';
+
+    if (orderId.isEmpty) {
+      throw Exception('Unable to generate order ID.');
+    }
+
+    // ------------------------------------------------------------
+    // CREATE ORDER
+    // ------------------------------------------------------------
+    await conn.execute(
+      '''
+      INSERT INTO Orders (
+        id,
+        userId,
+        status,
+        totalAmount,
+        subTotal,
+        discount,
+        shippingFee,
+        paymentMethod,
+        shippingAddress,
+        notes
+      )
+      VALUES (
+        :id,
+        :userId,
+        'pending',
+        :totalAmount,
+        :subTotal,
+        :discount,
+        :shippingFee,
+        :paymentMethod,
+        :shippingAddress,
+        :notes
+      )
+      ''',
+      {
+        'id': orderId,
+        'userId': userId,
+        'totalAmount': totalAmount,
+        'subTotal': subtotal,
+        'discount': totalDiscount,
+        'shippingFee': shippingFee,
+        'paymentMethod': paymentMethod,
+        'shippingAddress': shippingAddress,
+        'notes': notes,
+      },
+    );
+
+    // ------------------------------------------------------------
+    // CREATE ORDER ITEMS + REDUCE STOCK
+    // ------------------------------------------------------------
+    for (final item in orderItems) {
+      await conn.execute(
+        '''
+        INSERT INTO OrderItems (
+          id,
+          orderId,
+          productId,
+          quantity,
+          unitPrice,
+          discount,
+          totalPrice
+        )
+        VALUES (
+          UUID(),
+          :orderId,
+          :productId,
+          :quantity,
+          :unitPrice,
+          :discount,
+          :totalPrice
+        )
+        ''',
+        {
+          'orderId': orderId,
+          'productId': item['productId'],
+          'quantity': item['quantity'],
+          'unitPrice': item['unitPrice'],
+          'discount': item['discount'],
+          'totalPrice': item['totalPrice'],
+        },
+      );
+
+      // Re-check stock while reducing it.
+      final stockUpdate = await conn.execute(
+        '''
+        UPDATE Products
+        SET quantity = quantity - :quantity
+        WHERE id = :productId
+          AND quantity >= :quantity
+        ''',
+        {
+          'productId': item['productId'],
+          'quantity': item['quantity'],
+        },
+      );
+
+      if (stockUpdate.affectedRows.toInt() == 0) {
+        throw Exception(
+          'Stock changed while placing your order. Please try again.',
+        );
+      }
+    }
+
+    // ------------------------------------------------------------
+    // REMOVE ONLY PURCHASED CART ITEMS
+    // ------------------------------------------------------------
+    final deleteParams = <String, dynamic>{
+      'userId': userId,
+    };
+
+    for (int i = 0; i < cartItemIds.length; i++) {
+      deleteParams['deleteCartId$i'] = cartItemIds[i];
+    }
+
+    final deletePlaceholders = List.generate(
+      cartItemIds.length,
+      (index) => ':deleteCartId$index',
+    ).join(', ');
+
+    await conn.execute(
+      '''
+      DELETE FROM CartItems
+      WHERE userId = :userId
+        AND id IN ($deletePlaceholders)
+      ''',
+      deleteParams,
+    );
+
+    // ------------------------------------------------------------
+    // COMMIT
+    // ------------------------------------------------------------
+    await conn.execute('COMMIT');
+
+    return orderId;
+  } catch (e) {
+    // ------------------------------------------------------------
+    // ROLLBACK EVERYTHING
+    // ------------------------------------------------------------
+    try {
+      await conn.execute('ROLLBACK');
+    } catch (_) {
+      // Ignore rollback failure and preserve original exception.
+    }
+
+    throw Exception(
+      'Failed to place order: ${e.toString()}',
+    );
+  }
+}
+
+Future<List<Map<String, String?>>> getUserOrders(String userId) async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      o.id,
+      o.status,
+      o.totalAmount,
+      o.subTotal,
+      o.discount,
+      o.shippingFee,
+      o.paymentMethod,
+      o.shippingAddress,
+      o.createdAt,
+      o.updatedAt,
+      COUNT(oi.id) AS itemsCount
+    FROM Orders o
+    LEFT JOIN OrderItems oi
+      ON oi.orderId = o.id
+    WHERE o.userId = :userId
+    GROUP BY
+      o.id,
+      o.status,
+      o.totalAmount,
+      o.subTotal,
+      o.discount,
+      o.shippingFee,
+      o.paymentMethod,
+      o.shippingAddress,
+      o.createdAt,
+      o.updatedAt
+    ORDER BY o.createdAt DESC
+    ''',
+    {'userId': userId},
+  );
+
+  return result.rows.map((row) => row.assoc()).toList();
+}
+
 }

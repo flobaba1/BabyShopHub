@@ -113,7 +113,7 @@ class PaymentMethodsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: colors.last.withOpacity(0.3),
+            color: colors.last.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -161,7 +161,7 @@ class PaymentMethodsScreen extends StatelessWidget {
                   Text(
                     'CARD HOLDER',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
                     ),
@@ -183,7 +183,7 @@ class PaymentMethodsScreen extends StatelessWidget {
                   Text(
                     'EXPIRES',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
                     ),
@@ -321,7 +321,7 @@ class PaymentMethodsScreen extends StatelessWidget {
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: TextStyle(
-              color: Colors.grey.withOpacity(0.5),
+              color: Colors.grey.withValues(alpha: 0.5),
               fontSize: 14,
             ),
             prefixIcon: icon != null
@@ -331,7 +331,7 @@ class PaymentMethodsScreen extends StatelessWidget {
             fillColor: const Color(0xFFFFF8F4),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

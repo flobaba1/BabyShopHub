@@ -102,7 +102,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
@@ -186,7 +186,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: TextStyle(
-              color: Colors.grey.withOpacity(0.6),
+              color: Colors.grey.withValues(alpha: 0.6),
               fontSize: 14,
             ),
             filled: true,
@@ -197,7 +197,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.15)),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
