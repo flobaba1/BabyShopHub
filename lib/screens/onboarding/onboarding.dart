@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:baby_shop_hub/core/onboarding_service.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
+
+  Future<void> _finishOnboarding(BuildContext context) async {
+    await OnboardingService.completeOnboarding();
+
+    if (context.mounted) {
+      context.go('/login');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +142,7 @@ class OnboardingScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () => _finishOnboarding(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: const BorderSide(color: Color(0xFFEEEEEE)),
@@ -166,7 +176,8 @@ class OnboardingScreen extends StatelessWidget {
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () => context.go('/onboarding2'),
+
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF6600),
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -200,26 +211,26 @@ class OnboardingScreen extends StatelessWidget {
                   ),
 
                   // Authentication Navigation Router
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Already have an account? ',
-                        style: TextStyle(color: Colors.grey, fontSize: 14),
-                      ),
-                      GestureDetector(
-                        onTap: () {},
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
-                            color: Color(0xFFFF6600),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     const Text(
+                  //       'Already have an account? ',
+                  //       style: TextStyle(color: Colors.grey, fontSize: 14),
+                  //     ),
+                  //     GestureDetector(
+                  //       onTap: () {},
+                  //       child: const Text(
+                  //         'Sign In',
+                  //         style: TextStyle(
+                  //           color: Color(0xFFFF6600),
+                  //           fontWeight: FontWeight.bold,
+                  //           fontSize: 14,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),

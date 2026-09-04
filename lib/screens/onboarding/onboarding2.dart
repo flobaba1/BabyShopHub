@@ -6,10 +6,9 @@ class OnboardingScreenTwo extends StatelessWidget {
   const OnboardingScreenTwo({super.key});
 
   Future<void> _finishOnboarding(BuildContext context) async {
-    // 1. Persist the flag so onboarding won't show again
     await OnboardingService.completeOnboarding();
 
- if (context.mounted) {
+    if (context.mounted) {
       context.go('/login');
     }
   }
@@ -30,10 +29,7 @@ class OnboardingScreenTwo extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFFF9800),
-                      Color(0xFFFF7300),
-                    ],
+                    colors: [Color(0xFFFF9800), Color(0xFFFF7300)],
                   ),
                 ),
                 child: Padding(
@@ -136,12 +132,14 @@ class OnboardingScreenTwo extends StatelessWidget {
                           child: SizedBox(
                             height: 54,
                             child: OutlinedButton(
-                             // 2. Navigate to Login
-                                  onPressed: () {
+                              // 2. Navigate to Login
+                              onPressed: () {
                                 _finishOnboarding(context);
                               },
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Color(0xFFEEEEEE)),
+                                side: const BorderSide(
+                                  color: Color(0xFFEEEEEE),
+                                ),
                                 foregroundColor: Colors.grey[700],
                                 shape: const StadiumBorder(),
                               ),
@@ -155,7 +153,7 @@ class OnboardingScreenTwo extends StatelessWidget {
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(width: 16),
 
                         // Next Button with shadow matching UI
@@ -166,16 +164,16 @@ class OnboardingScreenTwo extends StatelessWidget {
                               borderRadius: BorderRadius.circular(27),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFFF6D00).withOpacity(0.3),
+                                  color: const Color(
+                                    0xFFFF6D00,
+                                  ).withOpacity(0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
                             child: ElevatedButton(
-                              onPressed: () {
-                                // Connect your navigation sequence here
-                              },
+                              onPressed: () => context.go('/onboarding3'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFF6D00),
                                 foregroundColor: Colors.white,
@@ -203,10 +201,7 @@ class OnboardingScreenTwo extends StatelessWidget {
                       children: [
                         const Text(
                           'Already have an account? ',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 15,
-                          ),
+                          style: TextStyle(color: Colors.grey, fontSize: 15),
                         ),
                         GestureDetector(
                           onTap: () {

@@ -130,9 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFE7E8EA),
-                        ),
+                        border: Border.all(color: const Color(0xFFE7E8EA)),
                       ),
                       child: const Row(
                         children: [
@@ -231,10 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.checkroom_outlined,
                           name: 'Clothing',
                         ),
-                        _CategoryItem(
-                          icon: Icons.toys_outlined,
-                          name: 'Toys',
-                        ),
+                        _CategoryItem(icon: Icons.toys_outlined, name: 'Toys'),
                         _CategoryItem(
                           icon: Icons.bathtub_outlined,
                           name: 'Bath & Care',
@@ -349,9 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (_isLoading)
                     const SizedBox(
                       height: 250,
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
+                      child: Center(child: CircularProgressIndicator()),
                     )
                   else if (_error != null)
                     _buildError()
@@ -416,9 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
               for (int i = 0; i < products.length; i += 2)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: ProductCard(
-                    product: products[i],
-                  ),
+                  child: ProductCard(product: products[i]),
                 ),
             ],
           ),
@@ -433,9 +424,7 @@ class _HomeScreenState extends State<HomeScreen> {
               for (int i = 1; i < products.length; i += 2)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: ProductCard(
-                    product: products[i],
-                  ),
+                  child: ProductCard(product: products[i]),
                 ),
             ],
           ),
@@ -458,16 +447,10 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
           const Text(
             'Unable to load products',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: _loadProducts,
-            child: const Text('Try Again'),
-          ),
+          TextButton(onPressed: _loadProducts, child: const Text('Try Again')),
         ],
       ),
     );
@@ -485,15 +468,9 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFFE8E8E8),
-          ),
+          border: Border.all(color: const Color(0xFFE8E8E8)),
         ),
-        child: Icon(
-          icon,
-          size: 19,
-          color: const Color(0xFF4C5360),
-        ),
+        child: Icon(icon, size: 19, color: const Color(0xFF4C5360)),
       ),
     );
   }
@@ -503,10 +480,7 @@ class _CategoryItem extends StatelessWidget {
   final IconData icon;
   final String name;
 
-  const _CategoryItem({
-    required this.icon,
-    required this.name,
-  });
+  const _CategoryItem({required this.icon, required this.name});
 
   @override
   Widget build(BuildContext context) {
@@ -522,11 +496,7 @@ class _CategoryItem extends StatelessWidget {
               color: const Color(0xFFFFF0E8),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFFFF6600),
-              size: 25,
-            ),
+            child: Icon(icon, color: const Color(0xFFFF6600), size: 25),
           ),
           const SizedBox(height: 6),
           Text(
@@ -563,17 +533,11 @@ class _BenefitCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFE8E8E8),
-        ),
+        border: Border.all(color: const Color(0xFFE8E8E8)),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 21,
-            color: const Color(0xFFFF6600),
-          ),
+          Icon(icon, size: 21, color: const Color(0xFFFF6600)),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -590,10 +554,7 @@ class _BenefitCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    fontSize: 7,
-                    color: Color(0xFF979DA7),
-                  ),
+                  style: const TextStyle(fontSize: 7, color: Color(0xFF979DA7)),
                 ),
               ],
             ),
