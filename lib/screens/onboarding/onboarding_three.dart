@@ -26,30 +26,16 @@ class FastSafeDeliveryScreen extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity,
-                constraints: const BoxConstraints(
-                  minHeight: 250,
-                ),
-                padding: const EdgeInsets.fromLTRB(
-                  20,
-                  8,
-                  20,
-                  12,
-                ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF08C4CC),
-                ),
+                constraints: const BoxConstraints(minHeight: 250),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                decoration: const BoxDecoration(color: Color(0xFF08C4CC)),
                 child: Column(
                   children: [
                     // Image.asset(
                     //   'assets/rocket.png',
                     //   height: 70,
                     // )  NO IMAGE YET
-                    const Text(
-                      '🚀',
-                      style: TextStyle(
-                        fontSize: 70,
-                      ),
-                    ),
+                    const Text('🚀', style: TextStyle(fontSize: 70)),
 
                     const SizedBox(height: 2),
 
@@ -114,10 +100,7 @@ class FastSafeDeliveryScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'Get Started',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -129,14 +112,9 @@ class FastSafeDeliveryScreen extends StatelessWidget {
                 onTap: () => _finishOnboarding(context),
                 child: RichText(
                   text: const TextSpan(
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF9AA3B2),
-                    ),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF9AA3B2)),
                     children: [
-                      TextSpan(
-                        text: 'Already have an account? ',
-                      ),
+                      TextSpan(text: 'Already have an account? '),
                       TextSpan(
                         text: 'Sign In',
                         style: TextStyle(
@@ -162,9 +140,7 @@ class FastSafeDeliveryScreen extends StatelessWidget {
       width: active ? 20 : 7,
       height: 7,
       decoration: BoxDecoration(
-        color: active
-            ? const Color(0xFFFF6800)
-            : const Color(0xFFE2E5E9),
+        color: active ? const Color(0xFFFF6800) : const Color(0xFFE2E5E9),
         borderRadius: BorderRadius.circular(10),
       ),
     );
