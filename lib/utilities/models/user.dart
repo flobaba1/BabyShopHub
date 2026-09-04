@@ -5,21 +5,22 @@ class User {
   final String fullName;
   final String email;
   final String? address;
-  final String password;
+  final String? password;
   final String status;
-  final DateTime createdAt;
+  final DateTime? createdAt;
   final bool isAdmin;
   final bool use2FA;
   final Uint8List? image;
+  final metadata = <String, dynamic>{}; // For any additional metadata
 
   User({
     required this.id,
     required this.fullName,
     required this.email,
     this.address,
-    required this.password,
+    this.password,
     this.status = 'Active',
-    required this.createdAt,
+    this.createdAt,
     this.isAdmin = false,
     this.use2FA = false,
     this.image,

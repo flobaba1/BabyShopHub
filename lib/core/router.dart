@@ -17,6 +17,7 @@ import 'package:baby_shop_hub/screens/app/checkout/payment.dart';
 import 'package:baby_shop_hub/screens/app/checkout/review.dart';
 import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
 import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart';
+import 'package:baby_shop_hub/screens/auth/OTPauth.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -63,6 +64,11 @@ GoRouter createRouter(String initialRoute) {
           final email = state.extra as String? ?? 'you@example.com';
           return CheckEmailScreen(email: email);
         },
+      ),
+
+      GoRoute(
+        path: '/otp',
+        builder: (context, state) => const OtpScreen(),
       ),
 
       GoRoute(
