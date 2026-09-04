@@ -1,21 +1,7 @@
 import 'package:flutter/material.dart';
-
-
-class UserModel {
-  final String name;
-  final String email;
-  final int orderCount;
-  final String joinedDate;
-  bool isActive;
-
-  UserModel({
-    required this.name,
-    required this.email,
-    required this.orderCount,
-    required this.joinedDate,
-    required this.isActive,
-  });
-}
+import 'package:intl/intl.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:baby_shop_hub/utilities/models/user.dart';
 
 class AdminUsersView extends StatefulWidget {
   const AdminUsersView({super.key});
@@ -25,127 +11,216 @@ class AdminUsersView extends StatefulWidget {
 }
 
 class _AdminUsersViewState extends State<AdminUsersView> {
-  
-  final List<UserModel> _users = [
-    UserModel(
-      name: 'Emma Johnson',
-      email: 'emma@example.com',
-      orderCount: 3,
-      joinedDate: 'Jan 2026',
-      isActive: true,
-    ),
-    UserModel(
-      name: 'Sarah Mitchell',
-      email: 'sarah@example.com',
-      orderCount: 7,
-      joinedDate: 'Mar 2026',
-      isActive: true,
-    ),
-    UserModel(
-      name: 'David Kim',
-      email: 'david@example.com',
-      orderCount: 2,
-      joinedDate: 'Jun 2026',
-      isActive: true,
-    ),
-    UserModel(
-      name: 'Priya Sharma',
-      email: 'priya@example.com',
-      orderCount: 5,
-      joinedDate: 'Feb 2026',
-      isActive: true,
-    ),
-    UserModel(
-      name: 'James Roberts',
-      email: 'james@example.com',
-      orderCount: 1,
-      joinedDate: 'Aug 2026',
-      isActive: false,
-    ),
-  ];
+  final MySQLService _dbService = MySQLService();
 
-  void _toggleUserStatus(UserModel user) {
+  List<User> _users = [];
+  Map<String, int> _userOrderCounts = {};
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsersData();
+  }
+
+  Future<void> _fetchUsersData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final users = await _dbService.fetchAllUsers();
+      final orderCounts = await _dbService.fetchUserOrderCounts();
+
+      if (mounted) {
+        setState(() {
+          _users = users;
+          _userOrderCounts = orderCounts;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleUserStatus(User user) async {
+    final String newStatus = user.status.toLowerCase() == 'active'
+        ? 'Inactive'
+        : 'Active';
+
+    // Optimistic UI update
     setState(() {
-      user.isActive = !user.isActive;
+      final index = _users.indexWhere((u) => u.id == user.id);
+      if (index != -1) {
+        _users[index] = User(
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          address: user.address,
+          password: user.password,
+          status: newStatus,
+          createdAt: user.createdAt,
+          isAdmin: user.isAdmin,
+        );
+      }
     });
+
+    try {
+      final success = await _dbService.updateUserStatus(user.id, newStatus);
+      if (!success && mounted) {
+        throw Exception('Status update failed');
+      }
+    } catch (e) {
+      if (mounted) {
+        _fetchUsersData();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(
-            'User Management',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF7F2), // Light cream background
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+
+            // Section Heading
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.0),
+              child: Text(
+                'User Management',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
             ),
-          ),
+
+            const SizedBox(height: 12),
+
+            // Content Body
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFEA580C),
+                      ),
+                    )
+                  : _errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Error: $_errorMessage',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: _fetchUsersData,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFEA580C),
+                            ),
+                            child: const Text(
+                              'Retry',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchUsersData,
+                      color: const Color(0xFFEA580C),
+                      child: _users.isEmpty
+                          ? const Center(child: Text('No users found.'))
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              itemCount: _users.length,
+                              itemBuilder: (context, index) {
+                                final user = _users[index];
+                                final orderCount =
+                                    _userOrderCounts[user.id] ?? 0;
+                                return _buildUserCard(user, orderCount);
+                              },
+                            ),
+                    ),
+            ),
+          ],
         ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            itemCount: _users.length,
-            itemBuilder: (context, index) {
-              final user = _users[index];
-              return _buildUserCard(user);
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildUserCard(UserModel user) {
-    // Extract first character of name for circle avatar
-    final initial = user.name.isNotEmpty ? user.name[0].toUpperCase() : '?';
+  // User Item Card Builder
+  Widget _buildUserCard(User user, int orderCount) {
+    final bool isActive = user.status.toLowerCase() == 'active';
+
+    final String initial = user.fullName.trim().isNotEmpty
+        ? user.fullName.trim()[0].toUpperCase()
+        : '?';
+
+    final String formattedDate = DateFormat('MMM yyyy').format(user.createdAt);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(14.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.0),
         border: Border.all(color: const Color(0xFFF3F4F6)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Avatar Initial Circle
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: const Color(0xFFFFEDD5), 
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: Color(0xFFEA580C), 
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+          // Letter Initial Avatar
+          Container(
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFEDD5),
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
+            child: Center(
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  color: Color(0xFFEA580C),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
 
-          // User Main Details
+          // User Meta Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user.name,
+                  user.fullName,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF111827),
                   ),
@@ -154,62 +229,59 @@ class _AdminUsersViewState extends State<AdminUsersView> {
                 Text(
                   user.email,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 11,
                     color: Color(0xFF9CA3AF),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${user.orderCount} orders · Joined ${user.joinedDate}',
+                  '$orderCount orders · Joined $formattedDate',
                   style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF6B7280),
+                    fontSize: 11,
+                    color: Color(0xFF9CA3AF),
                   ),
                 ),
               ],
             ),
           ),
 
-        
+          // Status Badge and Action Edit Toggle Icon
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Active / Inactive Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: user.isActive
-                      ? const Color(0xFFDCFCE7) // Green background
-                      : const Color(0xFFF3F4F6), // Grey background
-                  borderRadius: BorderRadius.circular(12),
+                  color: isActive
+                      ? const Color(0xFFDCFCE7)
+                      : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  user.isActive ? 'Active' : 'Inactive',
+                  isActive ? 'Active' : 'Inactive',
                   style: TextStyle(
-                    color: user.isActive
-                        ? const Color(0xFF16A34A) // Green text
-                        : const Color(0xFF6B7280), // Grey text
-                    fontSize: 11,
+                    color: isActive
+                        ? const Color(0xFF16A34A)
+                        : const Color(0xFF6B7280),
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-
-              // Edit / Toggle Button
+              const SizedBox(height: 10),
               InkWell(
                 onTap: () => _toggleUserStatus(user),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF7ED),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
                     Icons.edit_outlined,
-                    size: 16,
+                    size: 14,
                     color: Color(0xFFEA580C),
                   ),
                 ),

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,7 +9,7 @@ import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
 import 'package:baby_shop_hub/screens/auth/forgotPassword.dart';
 //import 'package:baby_shop_hub/screens/app/products/all_products.dart';
 //import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
-import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';  
+import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
 import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
 import 'package:baby_shop_hub/screens/app/categories/categories.dart';
 import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
@@ -29,7 +28,7 @@ GoRouter createRouter(String initialRoute) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
 
-    initialLocation: '/login',
+    initialLocation: initialRoute,
 
     routes: [
       // AUTH / ONBOARDING
@@ -51,10 +50,7 @@ GoRouter createRouter(String initialRoute) {
         builder: (context, state) => const ForgotPassword(),
       ),
 
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
       GoRoute(
         path: '/signup',
@@ -86,12 +82,9 @@ GoRouter createRouter(String initialRoute) {
         builder: (context, state) => const FastSafeDeliveryScreen(),
       ),
 
-
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return MainShell(
-            navigationShell: navigationShell,
-          );
+          return MainShell(navigationShell: navigationShell);
         },
 
         branches: [

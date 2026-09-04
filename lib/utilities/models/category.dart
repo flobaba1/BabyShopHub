@@ -5,9 +5,6 @@ class Category {
   Category({required this.id, required this.name});
 
   factory Category.fromRow(Map<String, String?> row) {
-    return Category(
-      id: row['id'] ?? '',
-      name: row['name'] ?? '',
-    );
+    return Category(id: row['id'] ?? '', name: row['name'] ?? '');
   }
 }
