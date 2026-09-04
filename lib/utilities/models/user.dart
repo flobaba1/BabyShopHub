@@ -9,7 +9,8 @@ class User {
   final String status;
   final DateTime createdAt;
   final bool isAdmin;
-  final Uint8List? image; // BLOB Data
+  final bool use2FA;
+  final Uint8List? image;
 
   User({
     required this.id,
@@ -20,6 +21,7 @@ class User {
     this.status = 'Active',
     required this.createdAt,
     this.isAdmin = false,
+    this.use2FA = false,
     this.image,
   });
 
@@ -35,6 +37,10 @@ class User {
           ? DateTime.parse(row['createdAt']!)
           : DateTime.now(),
       isAdmin: row['isAdmin'] == '1' || row['isAdmin'] == 'true',
+
+      // Read the 2FA setting from MySQL
+      use2FA: row['use2FA'] == '1' || row['use2FA'] == 'true',
+
       image: imageBlob,
     );
   }

@@ -32,7 +32,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!_agreeToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please accept the Terms of Service and Privacy Policy'),
+            content: Text(
+              'Please accept the Terms of Service and Privacy Policy',
+            ),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -86,10 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Subtitle
                 const Text(
                   'Join thousands of happy parents on BabyShopHub',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 32),
 
@@ -126,7 +125,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email address';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Please enter a valid email address';
                     }
                     return null;
@@ -279,10 +280,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     const Text(
                       'Already have an account? ',
-                      style: TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 15,
-                      ),
+                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 15),
                     ),
                     GestureDetector(
                       onTap: () {},

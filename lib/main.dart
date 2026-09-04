@@ -2,6 +2,7 @@ import 'package:baby_shop_hub/core/mysql_service.dart';
 import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/core/router.dart';
 import 'package:baby_shop_hub/core/onboarding_service.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'dart:developer';
 
 void main() async {
@@ -14,6 +15,15 @@ void main() async {
   final String initialRoute = isFirstTime ? '/onboarding' : '/login';
 
   runApp(BabyShopApp(initialRoute: initialRoute));
+
+  configLoading();
+}
+
+void configLoading() {
+  EasyLoading.instance
+    ..indicatorType = EasyLoadingIndicatorType.ring
+    ..loadingStyle = EasyLoadingStyle.dark
+    ..maskType = EasyLoadingMaskType.black; // Blurs/darkens background
 }
 
 class BabyShopApp extends StatelessWidget {
@@ -45,6 +55,8 @@ class BabyShopApp extends StatelessWidget {
             'Roboto', // Default fallback font, change if using custom typography
       ),
       routerConfig: createRouter(initialRoute),
+
+      builder: EasyLoading.init(),
     );
   }
 }
