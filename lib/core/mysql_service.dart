@@ -45,7 +45,6 @@ class MySQLService {
   // ===========================================================================
   // AUTHENTICATION & USERS
 
-
   Future<bool> createUser({
     required String fullName,
     required String email,
@@ -466,9 +465,7 @@ class MySQLService {
     return true;
   }
 
-  
   // USER CARDS CRUD
-  
 
   Future<bool> addUserCard({
     required String userId,
@@ -644,5 +641,44 @@ class MySQLService {
   Future<void> dispose() async {
     _idleTimer?.cancel();
     await _closeConnection();
+  }
+
+  Future<User> getUserById(String userId) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      "SELECT id, fullName, email, address, password, status, "
+      "createdAt, isAdmin, use2FA "
+      "FROM Users WHERE id = :id",
+      {"id": userId},
+    );
+
+    if (result.rows.isEmpty) {
+      throw Exception("User not found.");
+    }
+
+    final row = result.rows.first.assoc();
+
+    final Uint8List? imageBytes = await getUserProfileImage(userId);
+
+    return User.fromRow(row, imageBlob: imageBytes);
+  }
+
+  Future<bool> updateUserProfile({
+    required String userId,
+    required String fullName,
+    required String email,
+    String? address,
+  }) async {
+    final conn = await connection;
+    final result = await conn.execute(
+      "UPDATE Users SET "
+      "fullName = :fullName, "
+      "email = :email, "
+      "address = :address "
+      "WHERE id = :id",
+      {"id": userId, "fullName": fullName, "email": email, "address": address},
+    );
+    return result.affectedRows.toInt() > 0;
   }
 }

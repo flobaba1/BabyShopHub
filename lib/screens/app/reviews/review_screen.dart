@@ -10,8 +10,7 @@ class ReviewsScreen extends StatefulWidget {
 class _ReviewsScreenState extends State<ReviewsScreen> {
   int _selectedRating = 0;
 
-  final TextEditingController _reviewController =
-      TextEditingController();
+  final TextEditingController _reviewController = TextEditingController();
 
   @override
   void dispose() {
@@ -59,15 +58,10 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             //content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  6,
-                  16,
-                  20,
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
                 child: Column(
                   children: [
-                   //rating summary
+                    //rating summary
                     _buildRatingSummary(),
 
                     const SizedBox(height: 12),
@@ -150,16 +144,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   Widget _buildRatingSummary() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 13,
-        vertical: 15,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE8E5E2),
-        ),
+        border: Border.all(color: const Color(0xFFE8E5E2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x05000000),
@@ -200,10 +189,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
                 Text(
                   '5 reviews',
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 8, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -215,31 +201,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           Expanded(
             child: Column(
               children: [
-                _ratingBar(
-                  rating: '5',
-                  percentage: 0.88,
-                  count: '3',
-                ),
-                _ratingBar(
-                  rating: '4',
-                  percentage: 0.62,
-                  count: '2',
-                ),
-                _ratingBar(
-                  rating: '3',
-                  percentage: 0,
-                  count: '0',
-                ),
-                _ratingBar(
-                  rating: '2',
-                  percentage: 0,
-                  count: '0',
-                ),
-                _ratingBar(
-                  rating: '1',
-                  percentage: 0,
-                  count: '0',
-                ),
+                _ratingBar(rating: '5', percentage: 0.88, count: '3'),
+                _ratingBar(rating: '4', percentage: 0.62, count: '2'),
+                _ratingBar(rating: '3', percentage: 0, count: '0'),
+                _ratingBar(rating: '2', percentage: 0, count: '0'),
+                _ratingBar(rating: '1', percentage: 0, count: '0'),
               ],
             ),
           ),
@@ -261,20 +227,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             width: 10,
             child: Text(
               rating,
-              style: const TextStyle(
-                fontSize: 7,
-                color: Color(0xFF737B89),
-              ),
+              style: const TextStyle(fontSize: 7, color: Color(0xFF737B89)),
             ),
           ),
 
           const SizedBox(width: 4),
 
-          const Icon(
-            Icons.star_rounded,
-            size: 10,
-            color: Color(0xFFFFB000),
-          ),
+          const Icon(Icons.star_rounded, size: 10, color: Color(0xFFFFB000)),
 
           const SizedBox(width: 3),
 
@@ -308,10 +267,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             child: Text(
               count,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 7,
-                color: Color(0xFF9BA1AE),
-              ),
+              style: const TextStyle(fontSize: 7, color: Color(0xFF9BA1AE)),
             ),
           ),
         ],
@@ -324,18 +280,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   Widget _buildSellerRating() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        13,
-        13,
-        13,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE8E5E2),
-        ),
+        border: Border.all(color: const Color(0xFFE8E5E2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x05000000),
@@ -439,18 +388,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   Widget _buildWriteReview() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        13,
-        14,
-        13,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(13, 14, 13, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE8E5E2),
-        ),
+        border: Border.all(color: const Color(0xFFE8E5E2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x05000000),
@@ -479,34 +421,29 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                5,
-                (index) {
-                  final rating = index + 1;
+              children: List.generate(5, (index) {
+                final rating = index + 1;
 
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedRating = rating;
-                      });
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 3,
-                      ),
-                      child: Icon(
-                        rating <= _selectedRating
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        size: 26,
-                        color: rating <= _selectedRating
-                            ? const Color(0xFFFFB000)
-                            : const Color(0xFFDDE1E6),
-                      ),
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedRating = rating;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Icon(
+                      rating <= _selectedRating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 26,
+                      color: rating <= _selectedRating
+                          ? const Color(0xFFFFB000)
+                          : const Color(0xFFDDE1E6),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              }),
             ),
           ),
 
@@ -522,13 +459,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             child: TextField(
               controller: _reviewController,
               maxLines: 3,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Color(0xFF273143),
-              ),
+              style: const TextStyle(fontSize: 10, color: Color(0xFF273143)),
               decoration: InputDecoration(
-                hintText:
-                    'Share your experience with this product...',
+                hintText: 'Share your experience with this product...',
                 hintStyle: const TextStyle(
                   fontSize: 9.5,
                   color: Color(0xFFA4A9B2),
@@ -560,10 +493,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               ),
               child: const Text(
                 'Submit Review',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -583,18 +513,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        13,
-        12,
-        13,
-        10,
-      ),
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE8E5E2),
-        ),
+        border: Border.all(color: const Color(0xFFE8E5E2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x04000000),
@@ -657,20 +580,17 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               ),
 
               Row(
-                children: List.generate(
-                  5,
-                  (index) {
-                    return Icon(
-                      index < rating
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
-                      size: 10,
-                      color: index < rating
-                          ? const Color(0xFFFFB000)
-                          : const Color(0xFFDDE1E6),
-                    );
-                  },
-                ),
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < rating
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    size: 10,
+                    color: index < rating
+                        ? const Color(0xFFFFB000)
+                        : const Color(0xFFDDE1E6),
+                  );
+                }),
               ),
             ],
           ),
@@ -702,20 +622,14 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
               const Text(
                 'Helpful',
-                style: TextStyle(
-                  fontSize: 7,
-                  color: Color(0xFF9BA1AE),
-                ),
+                style: TextStyle(fontSize: 7, color: Color(0xFF9BA1AE)),
               ),
 
               const SizedBox(width: 14),
 
               const Text(
                 'Report',
-                style: TextStyle(
-                  fontSize: 7,
-                  color: Color(0xFF9BA1AE),
-                ),
+                style: TextStyle(fontSize: 7, color: Color(0xFF9BA1AE)),
               ),
             ],
           ),
@@ -726,10 +640,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   //header circle button
 
-  Widget _circleButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -738,9 +649,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFFE8E5E2),
-          ),
+          border: Border.all(color: const Color(0xFFE8E5E2)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x08000000),
@@ -749,11 +658,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          size: 14,
-          color: const Color(0xFF273143),
-        ),
+        child: Icon(icon, size: 14, color: const Color(0xFF273143)),
       ),
     );
   }
