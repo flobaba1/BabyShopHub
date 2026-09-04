@@ -29,7 +29,7 @@ GoRouter createRouter(String initialRoute) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
 
-    initialLocation: '/login',
+    initialLocation: initialRoute,
 
     routes: [
       // AUTH / ONBOARDING

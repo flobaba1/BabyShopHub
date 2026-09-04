@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:go_router/go_router.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -9,6 +12,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final MySQLService mysqlService = MySQLService();
 
   // Text Controllers
   final TextEditingController _fullNameController = TextEditingController();
@@ -38,7 +42,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
         return;
       }
-    }
+
+      // Show loading indicator
+      EasyLoading.show(status: 'Creating account...');
+
+      mysqlService.createUser(
+        fullName: _fullNameController.text.trim(),
+        email: _emailController.text.trim(),
+        plainPassword: _passwordController.text,
+      ).then((bool isSuccess) {
+        EasyLoading.dismiss();
+
+        if (isSuccess) {
+          EasyLoading.showSuccess('User registered successfully!');
+          // Navigate to login or main dashboard
+          context.go('/login');
+        } else {
+          EasyLoading.showError('Failed to create account. Please try again.');
+        }
+      }).catchError((error) {
+        EasyLoading.dismiss();
+        
+        // Handle database errors, duplicate emails, network failures, etc.
+        final String errorMessage = error.toString().replaceAll('Exception: ', '');
+        EasyLoading.showError('Error: $errorMessage');
+      });
+        }
   }
 
   @override
