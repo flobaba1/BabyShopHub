@@ -53,7 +53,7 @@ class MyWishlistScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.grey.withOpacity(0.06)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.06)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

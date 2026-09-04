@@ -22,6 +22,108 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final MySQLService _mysqlService = MySQLService();
   final UserSession _userSession = UserSession.instance;
 
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.withValues(alpha: 0.06)),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildMenuTile(
+                          icon: Icons.person_outline_rounded,
+                          title: 'Personal Information',
+                          subtitle: 'Edit your profile details',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const PersonalInformationScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildMenuTile(
+                          icon: Icons.location_on_outlined,
+                          title: 'Delivery Addresses',
+                          subtitle: 'Manage saved addresses',
+                          onTap: () {
+                            // ACTUAL ROUTE LINKED: Opens DeliveryAddressesScreen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const DeliveryAddressesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildMenuTile(
+                          icon: Icons.credit_card_outlined,
+                          title: 'Payment Methods',
+                          subtitle: 'Cards & payment options',
+                          onTap: () {
+                            // ACTUAL ROUTE LINKED: Opens PaymentMethodsScreen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const PaymentMethodsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildMenuTile(
+                          icon: Icons.card_giftcard_outlined,
+                          title: 'My Wishlist',
+                          subtitle: 'Saved favorite products',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MyWishlistScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildMenuTile(
+                          icon: Icons.shield_outlined,
+                          title: 'Privacy & Security',
+                          subtitle: 'Password & account security',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const PrivacySecurityScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildMenuTile(
+                          icon: Icons.settings_outlined,
+                          title: 'App Settings',
+                          subtitle: 'Language, theme & more',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AppSettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
   User? _user;
   bool _isLoading = true;
 
@@ -195,6 +297,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Center(
+                  child: Text(
+                    'E',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
               // --------------------------------------------------
               // PROFILE IMAGE
               // --------------------------------------------------
@@ -227,7 +347,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 13,
                       ),
                     ),
@@ -240,7 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.25),
+                        color: Colors.white.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -342,7 +462,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.06)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.06)),
       ),
       child: Row(
         children: [
@@ -385,6 +505,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Switch(
             value: true,
             onChanged: (val) {},
+            activeThumbColor: Colors.orange,
+            activeTrackColor: Colors.orange.withValues(alpha: 0.3),
             activeColor: Colors.orange,
             activeTrackColor: Colors.orangeAccent,
           ),
@@ -442,7 +564,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFBF4FF),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.purple.withOpacity(0.08)),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.08)),
       ),
       child: ListTile(
         leading: Container(

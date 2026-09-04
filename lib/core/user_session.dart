@@ -1,5 +1,6 @@
 class UserSession {
   UserSession._();
+ 
 
   static final UserSession instance = UserSession._();
 
@@ -15,9 +16,11 @@ class UserSession {
   void login(String userId) {
     _userId = userId;
   }
+ 
 
   /// Clear the current user session.
   void logout() {
     _userId = null;
   }
+}
 }

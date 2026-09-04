@@ -61,6 +61,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Interactive avatar camera update preview box placeholder template
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'E',
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -77,6 +123,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
 
+              // Interactive Text Input Forms Sequences
+              _buildTextField(
+                'Full Name',
+                _nameController,
+                Icons.person_outline_rounded,
+              ),
+              const SizedBox(height: 20),
+              _buildTextField(
+                'Email Address',
+                _emailController,
+                Icons.email_outlined,
+              ),
+              const SizedBox(height: 20),
+              _buildTextField(
+                'Phone Number',
+                _phoneController,
+                Icons.phone_outlined,
+              ),
+              const SizedBox(height: 20),
+              _buildTextField(
+                'Date of Birth',
+                _dobController,
+                Icons.cake_outlined,
+                readOnly: true,
+              ),
+              const SizedBox(height: 20),
+
+              // Custom Dropdown Box Select Input field for handling Gender properties
+              const Text(
+                'Gender',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
                 const SizedBox(height: 20),
 
                 const Text(
