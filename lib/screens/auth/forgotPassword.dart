@@ -92,7 +92,7 @@ class ForgotPassword extends StatelessWidget {
               // Description
               const Text(
                 "Enter the email address linked to your account. We'll\n"
-                "send you a reset link.",
+                "send you a new password.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -164,7 +164,7 @@ class ForgotPassword extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'Send Reset Link',
+                    'Reset Password',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                 ),

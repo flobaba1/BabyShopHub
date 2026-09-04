@@ -23,7 +23,9 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 GoRouter createRouter(String initialRoute) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
+
     initialLocation: initialRoute,
+
     routes: [
       GoRoute(
         path: '/forgot-password',
