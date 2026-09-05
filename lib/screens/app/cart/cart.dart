@@ -47,7 +47,7 @@ class _CartScreenState extends State<CartScreen> {
   // ============================================================
 
   Future<void> _loadCart() async {
-    final userId = UserSession.instance.userId;
+    final userId = UserSession.loggedUser?.id;
 
     if (userId == null) {
       setState(() {
