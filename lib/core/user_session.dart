@@ -30,6 +30,7 @@ class UserSession {
     await prefs.setString(_keyUserEmail, user.email);
     await prefs.setBool(_keyIsAdmin, user.isAdmin);
     await prefs.setString(_KeyUserStatus, user.status);
+    loggedUser = user; // Store the user in memory for quick access
   }
 
   /// Retrieve user session data from SharedPreferences
