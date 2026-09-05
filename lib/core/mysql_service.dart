@@ -3,6 +3,7 @@ import 'package:baby_shop_hub/utilities/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/utilities/models/user.dart';
 import 'package:baby_shop_hub/utilities/models/cart_item.dart';
+import 'package:baby_shop_hub/utilities/models/category.dart';
 import 'package:baby_shop_hub/utilities/security_helper.dart';
 import 'package:baby_shop_hub/utilities/models/user_card.dart';
 import 'package:baby_shop_hub/utilities/models/wishlist_item.dart';
@@ -50,6 +51,7 @@ class MySQLService {
   // ===========================================================================
   // AUTHENTICATION & USERS
 
+
   Future<bool> createUser({
     required String fullName,
     required String email,
@@ -79,8 +81,8 @@ class MySQLService {
 
     return result.affectedRows.toInt() > 0;
   }
-
-  ///  Fetch all registered users
+  
+   ///  Fetch all registered users
   Future<List<User>> fetchAllUsers() async {
     final conn = await connection;
     final results = await conn.execute(
@@ -95,8 +97,84 @@ class MySQLService {
 
     return users;
   }
+  
+  // Fetch recent 5 orders from MySQL
+  Future<List<RecentOrder>> fetchRecentOrders() async {
+    final conn = await connection;
+    final results = await conn.execute(
+      "SELECT id, createdAt, status, totalAmount FROM Orders ORDER BY createdAt DESC LIMIT 5",
+    );
 
-  ///  Fetch total orders count grouped by userId
+    return results.rows.map((row) {
+      final data = row.assoc();
+      final status = data['status']?.toString() ?? 'Pending';
+
+      Color bg = const Color(0xFFFEF3C7);
+      Color text = const Color(0xFFD97706);
+
+      if (status.toLowerCase() == 'delivered') {
+        bg = const Color(0xFFDCFCE7);
+        text = const Color(0xFF16A34A);
+      } else if (status.toLowerCase() == 'shipped') {
+        bg = const Color(0xFFF3E8FF);
+        text = const Color(0xFF9333EA);
+      } else if (status.toLowerCase() == 'cancelled') {
+        bg = const Color(0xFFFEE2E2);
+        text = const Color(0xFFDC2626);
+      }
+
+      return RecentOrder(
+        id: data['id']?.toString() ?? '',
+        date: data['created_at']?.toString().split(' ')[0] ?? '',
+        status: status,
+        price: '\$${data['total_amount']?.toString() ?? '0'}',
+        statusBg: bg,
+        statusText: text,
+      );
+    }).toList();
+  }
+
+  Future<User> authenticateUser({
+    required String email,
+    required String plainPassword,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      "SELECT id, fullName, email, address, password, status, "
+      "createdAt, isAdmin, use2FA "
+      "FROM Users WHERE email = :email",
+      {"email": email},
+    );
+
+    if (result.rows.isEmpty) {
+      throw Exception("No account found with this email address.");
+    }
+
+    final row = result.rows.first.assoc();
+
+    final String storedHash = row['password'] ?? '';
+    final String userStatus = row['status'] ?? '';
+
+    if (userStatus != 'Active') {
+      throw Exception(
+        "Your account is currently inactive. Please contact support.",
+      );
+    }
+
+    final bool isPasswordValid = SecurityHelper.verifyPassword(
+      plainPassword,
+      storedHash,
+    );
+
+    if (!isPasswordValid) {
+      throw Exception("Invalid password. Please try again.");
+    }
+
+    return User.fromRow(row);
+  }
+  
+    ///  Fetch total orders count grouped by userId
   Future<Map<String, int>> fetchUserOrderCounts() async {
     final conn = await connection;
     final results = await conn.execute(
@@ -116,7 +194,7 @@ class MySQLService {
     return counts;
   }
 
-  ///  Update user status 
+	  ///  Update user status 
   Future<bool> updateUserStatus(String userId, String status) async {
     final conn = await connection;
     final result = await conn.execute(
@@ -126,7 +204,65 @@ class MySQLService {
 
     return result.affectedRows.toInt() > 0;
   }
+  
+   Future<User?> validateUserEmail(String userEmail) async {
+    final conn = await connection;
+  
+    final result = await conn.execute(
+      "SELECT * FROM Users WHERE email = :email",
+      {"email": userEmail}
+    );
 
+    if (result.rows.isEmpty) {
+      log("No user found with email: $userEmail");
+      return null; // Email does not exist
+    }
+    return User.fromRow(result.rows.first.assoc());
+  }
+
+  /// Hashes and updates a user's password in the database.
+  /// 
+  /// Supports target identification via either [userId] or [email].
+  Future<bool> updateUserPassword({
+    String? userId,
+    String? email,
+    required String newPlainPassword,
+  }) async {
+    if ((userId == null || userId.isEmpty) && (email == null || email.isEmpty)) {
+      throw ArgumentError("Either 'userId' or 'email' must be provided to update password.");
+    }
+
+    final conn = await connection;
+
+    // 1. Hash the new plain text password
+    final String hashedPassword = SecurityHelper.hashPassword(newPlainPassword);
+
+    // 2. Build conditional UPDATE query based on identifier provided
+    final String query = userId != null && userId.isNotEmpty
+        ? "UPDATE Users SET password = :password WHERE id = :identifier"
+        : "UPDATE Users SET password = :password WHERE email = :identifier";
+
+    final String identifier = (userId != null && userId.isNotEmpty) ? userId : email!;
+
+    try {
+      final result = await conn.execute(
+        query,
+        {
+          "password": hashedPassword,
+          "identifier": identifier,
+        },
+      );
+
+      if (result.affectedRows.toInt() == 0) {
+        throw Exception("User not found with the provided details.");
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception("Failed to update user password: ${e.toString()}");
+    }
+  }
+  
   Future<List<DashboardMetric>> fetchDashboardMetrics() async {
     final conn = await connection;
 
@@ -200,142 +336,6 @@ class MySQLService {
     ];
   }
 
-  // Fetch recent 5 orders from MySQL
-  Future<List<RecentOrder>> fetchRecentOrders() async {
-    final conn = await connection;
-    final results = await conn.execute(
-      "SELECT id, createdAt, status, totalAmount FROM Orders ORDER BY createdAt DESC LIMIT 5",
-    );
-
-    return results.rows.map((row) {
-      final data = row.assoc();
-      final status = data['status']?.toString() ?? 'Pending';
-
-      Color bg = const Color(0xFFFEF3C7);
-      Color text = const Color(0xFFD97706);
-
-      if (status.toLowerCase() == 'delivered') {
-        bg = const Color(0xFFDCFCE7);
-        text = const Color(0xFF16A34A);
-      } else if (status.toLowerCase() == 'shipped') {
-        bg = const Color(0xFFF3E8FF);
-        text = const Color(0xFF9333EA);
-      } else if (status.toLowerCase() == 'cancelled') {
-        bg = const Color(0xFFFEE2E2);
-        text = const Color(0xFFDC2626);
-      }
-
-      return RecentOrder(
-        id: data['id']?.toString() ?? '',
-        date: data['created_at']?.toString().split(' ')[0] ?? '',
-        status: status,
-        price: '\$${data['total_amount']?.toString() ?? '0'}',
-        statusBg: bg,
-        statusText: text,
-      );
-    }).toList();
-  }
-
-  /// Verify User credentials during Login
-  /// Throws an [Exception] with specific details if authentication fails.
-  Future<User> authenticateUser({
-    required String email,
-    required String plainPassword,
-  }) async {
-    final conn = await connection;
-
-    final result = await conn.execute(
-      "SELECT id, fullName, email, address, password, status, "
-      "createdAt, isAdmin, use2FA "
-      "FROM Users WHERE email = :email",
-      {"email": email},
-    );
-
-    if (result.rows.isEmpty) {
-      throw Exception("No account found with this email address.");
-    }
-
-    final row = result.rows.first.assoc();
-
-    final String storedHash = row['password'] ?? '';
-    final String userStatus = row['status'] ?? '';
-
-    if (userStatus != 'Active') {
-      throw Exception(
-        "Your account is currently inactive. Please contact support.",
-      );
-    }
-
-    // 3. Invalid password
-    final bool isPasswordValid = SecurityHelper.verifyPassword(
-      plainPassword,
-      storedHash,
-    );
-    if (!isPasswordValid) {
-      throw Exception("Invalid password. Please try again.");
-    }
-
-    return User.fromRow(row);
-  }
-
-   Future<User?> validateUserEmail(String userEmail) async {
-    final conn = await connection;
-  
-    final result = await conn.execute(
-      "SELECT * FROM Users WHERE email = :email",
-      {"email": userEmail}
-    );
-
-    if (result.rows.isEmpty) {
-      log("No user found with email: $userEmail");
-      return null; // Email does not exist
-    }
-    return User.fromRow(result.rows.first.assoc());
-  }
-
-  /// Hashes and updates a user's password in the database.
-  /// 
-  /// Supports target identification via either [userId] or [email].
-  Future<bool> updateUserPassword({
-    String? userId,
-    String? email,
-    required String newPlainPassword,
-  }) async {
-    if ((userId == null || userId.isEmpty) && (email == null || email.isEmpty)) {
-      throw ArgumentError("Either 'userId' or 'email' must be provided to update password.");
-    }
-
-    final conn = await connection;
-
-    // 1. Hash the new plain text password
-    final String hashedPassword = SecurityHelper.hashPassword(newPlainPassword);
-
-    // 2. Build conditional UPDATE query based on identifier provided
-    final String query = userId != null && userId.isNotEmpty
-        ? "UPDATE Users SET password = :password WHERE id = :identifier"
-        : "UPDATE Users SET password = :password WHERE email = :identifier";
-
-    final String identifier = (userId != null && userId.isNotEmpty) ? userId : email!;
-
-    try {
-      final result = await conn.execute(
-        query,
-        {
-          "password": hashedPassword,
-          "identifier": identifier,
-        },
-      );
-
-      if (result.affectedRows.toInt() == 0) {
-        throw Exception("User not found with the provided details.");
-      }
-
-      return true;
-    } catch (e) {
-      throw Exception("Failed to update user password: ${e.toString()}");
-    }
-  }
-
   /// Get the current 2FA setting for a user.
   Future<bool> getTwoFactorStatus(String userId) async {
     final conn = await connection;
@@ -401,9 +401,9 @@ class MySQLService {
     return row.colAt(0) as Uint8List?;
   }
 
-  // ===========================================================================
+  // ============================================================
   // CART ITEMS CRUD
-  // ===========================================================================
+  // ============================================================
 
   Future<bool> addToCart({
     required String userId,
@@ -472,34 +472,6 @@ class MySQLService {
       );
 
       return updateResult.affectedRows.toInt() > 0;
-    final existing = await conn.execute(
-      "SELECT id, quantity FROM CartItems "
-      "WHERE userId = :userId AND productId = :productId",
-      {"userId": userId, "productId": productId},
-    );
-
-    if (existing.rows.isNotEmpty) {
-      final currentQty = int.parse(
-        existing.rows.first.assoc()['quantity'] ?? '0',
-      );
-      final result = await conn.execute(
-        "UPDATE CartItems SET quantity = :quantity WHERE id = :id",
-        {
-          "quantity": currentQty + quantity,
-          "id": existing.rows.first.assoc()['id'],
-        },
-      );
-
-      return result.affectedRows.toInt() > 0;
-    } else {
-      final result = await conn.execute(
-        "INSERT INTO CartItems "
-        "(id, productId, userId, quantity) "
-        "VALUES (UUID(), :productId, :userId, :quantity)",
-        {"productId": productId, "userId": userId, "quantity": quantity},
-      );
-
-      return result.affectedRows.toInt() > 0;
     }
 
     // Product does not exist in cart.
@@ -727,7 +699,7 @@ class MySQLService {
     return null;
   }
 
-  Future<List<Product>> fetchProductsPaginated({
+    Future<List<Product>> fetchProductsPaginated({
     required int offset,
     required int limit,
   }) async {
@@ -746,22 +718,19 @@ class MySQLService {
       return Product.fromRow(row.assoc());
     }).toList();
   }
-
+  
+    /// Fetch Products by Category ID
   Future<List<Product>> fetchProductsByCategory(String categoryId) async {
     final conn = await connection;
-
     final result = await conn.execute(
-      "SELECT id, name, categoryId, price, quantity, brand, badge, rating, "
-      "discount, description, createdAt "
-      "FROM Products WHERE categoryId = :categoryId "
-      "ORDER BY createdAt DESC",
+      "SELECT id, name, categoryId, price, quantity, brand, badge, rating, discount, description, createdAt "
+      "FROM Products WHERE categoryId = :categoryId ORDER BY createdAt DESC",
       {"categoryId": categoryId},
     );
 
     return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
   }
 
-  /// Update or Upload Product Image BLOB
   Future<bool> updateProduct({
     required String id,
     required String name,
@@ -773,22 +742,10 @@ class MySQLService {
     double? rating,
     double? discount,
     String? description,
-    Uint8List? imageBytes,
   }) async {
     final conn = await connection;
 
-    // Check if product exists
-    final checkResult = await conn.execute(
-      "SELECT id FROM Products WHERE id = :id",
-      {"id": id},
-    );
-
-    if (checkResult.rows.isEmpty) {
-      throw Exception("Product ID '$id' does not exist in the Products table.");
-    }
-
-    // Update normal product information
-    await conn.execute(
+    final result = await conn.execute(
       "UPDATE Products SET "
       "name = :name, "
       "categoryId = :categoryId, "
@@ -823,7 +780,6 @@ class MySQLService {
     return true;
   }
 
-  /// Update or Upload Product Image BLOB
   Future<bool> updateProductImage({
     required String productId,
     required Uint8List imageBytes,
@@ -860,7 +816,8 @@ class MySQLService {
     return true;
   }
 
-  // ===========================================================================
+	
+    // ===========================================================================
   // CATEGORIES
   // ===========================================================================
 
@@ -890,9 +847,9 @@ class MySQLService {
       };
     }).toList();
   }
-
-  // ===========================================================================
+  
   // USER CARDS CRUD
+  
 
   Future<bool> addUserCard({
     required String userId,
@@ -954,6 +911,7 @@ class MySQLService {
 
   Future<bool> deleteUserCard(String cardId) async {
     final conn = await connection;
+
     final result = await conn.execute("DELETE FROM UserCards WHERE id = :id", {
       "id": cardId,
     });
@@ -1010,7 +968,8 @@ class MySQLService {
     final conn = await connection;
 
     final result = await conn.execute(
-      "SELECT id FROM UserWishlist WHERE userId = :userId AND productId = :productId",
+      "SELECT id FROM UserWishlist "
+      "WHERE userId = :userId AND productId = :productId",
       {"userId": userId, "productId": productId},
     );
 
@@ -1024,7 +983,8 @@ class MySQLService {
     final conn = await connection;
 
     final result = await conn.execute(
-      "DELETE FROM UserWishlist WHERE userId = :userId AND productId = :productId",
+      "DELETE FROM UserWishlist "
+      "WHERE userId = :userId AND productId = :productId",
       {"userId": userId, "productId": productId},
     );
 
@@ -1043,6 +1003,7 @@ class MySQLService {
       userId: userId,
       productId: productId,
     );
+
     if (exists) {
       return await removeFromWishlist(userId: userId, productId: productId);
     } else {
@@ -1186,6 +1147,7 @@ class MySQLService {
 
   // ===========================================================================
   // DISPOSAL AND CONNECTION MANAGEMENT
+  // ===========================================================================
 
   Future<void> _closeConnection() async {
     if (_connection != null && _connection!.connected) {
@@ -1193,14 +1155,8 @@ class MySQLService {
       _connection = null;
     }
   }
-
-  Future<void> dispose() async {
-    _idleTimer?.cancel();
-    await _closeConnection();
-  }
-
-
-// ORDERS & CHECKOUT
+  
+  // ORDERS & CHECKOUT
 
 
 Future<Map<String, dynamic>> getCheckoutItems({
@@ -1609,4 +1565,8 @@ Future<List<Map<String, String?>>> getUserOrders(String userId) async {
   return result.rows.map((row) => row.assoc()).toList();
 }
 
+  Future<void> dispose() async {
+    _idleTimer?.cancel();
+    await _closeConnection();
+  }
 }
