@@ -23,22 +23,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final UserSession _session = UserSession.instance;
   final ImagePicker _picker = ImagePicker();
 
-  late TextEditingController _nameController;
-  late TextEditingController _emailController;
-  late TextEditingController _addressController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _addressController;
 
   File? _profileImage;
-
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-
     _nameController = TextEditingController(text: widget.user.fullName);
-
     _emailController = TextEditingController(text: widget.user.email);
-
     _addressController = TextEditingController(text: widget.user.address ?? '');
   }
 
@@ -50,63 +46,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // ============================================================
-  // IMAGE PICKER
-  // ============================================================
-
   Future<void> _showImagePickerOptions() async {
-    await showModalBottomSheet(
+    await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Interactive avatar camera update preview box placeholder template
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'E',
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          color: Colors.orange,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -122,107 +68,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-
-              // Interactive Text Input Forms Sequences
-              _buildTextField(
-                'Full Name',
-                _nameController,
-                Icons.person_outline_rounded,
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(
-                'Email Address',
-                _emailController,
-                Icons.email_outlined,
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(
-                'Phone Number',
-                _phoneController,
-                Icons.phone_outlined,
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(
-                'Date of Birth',
-                _dobController,
-                Icons.cake_outlined,
-                readOnly: true,
-              ),
-              const SizedBox(height: 20),
-
-              // Custom Dropdown Box Select Input field for handling Gender properties
-              const Text(
-                'Gender',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
                 const SizedBox(height: 20),
-
                 const Text(
                   'Change Profile Picture',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-
                 const SizedBox(height: 20),
-
                 ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3EC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.orange,
-                    ),
+                  leading: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.orange,
                   ),
-                  title: const Text(
-                    'Take a Photo',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
+                  title: const Text('Take a Photo'),
                   subtitle: const Text('Use your camera'),
                   onTap: () {
                     Navigator.pop(context);
                     _pickImage(ImageSource.camera);
                   },
                 ),
-
                 const SizedBox(height: 8),
-
                 ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3EC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.photo_library_rounded,
-                      color: Colors.orange,
-                    ),
+                  leading: const Icon(
+                    Icons.photo_library_rounded,
+                    color: Colors.orange,
                   ),
-                  title: const Text(
-                    'Choose from Gallery',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
+                  title: const Text('Choose from Gallery'),
                   subtitle: const Text('Select an existing picture'),
                   onTap: () {
                     Navigator.pop(context);
                     _pickImage(ImageSource.gallery);
                   },
                 ),
-
                 const SizedBox(height: 10),
               ],
             ),
@@ -234,32 +113,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
+      final pickedFile = await _picker.pickImage(
         source: source,
         imageQuality: 80,
         maxWidth: 1000,
         maxHeight: 1000,
       );
 
-      if (pickedFile == null) {
-        return;
-      }
+      if (pickedFile == null) return;
 
       setState(() {
         _profileImage = File(pickedFile.path);
       });
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Unable to select image: $e')));
     }
   }
-
-  // ============================================================
-  // SAVE PROFILE
-  // ============================================================
 
   Future<void> _saveChanges() async {
     final userId = _session.userId;
@@ -275,16 +147,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final email = _emailController.text.trim();
     final address = _addressController.text.trim();
 
-    if (name.isEmpty) {
+    if (name.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your full name.')),
-      );
-      return;
-    }
-
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email address.')),
+        const SnackBar(content: Text('Name and email are required.')),
       );
       return;
     }
@@ -303,7 +168,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (_profileImage != null) {
         final Uint8List imageBytes = await _profileImage!.readAsBytes();
-
         await _mysqlService.updateUserProfileImage(
           userId: userId,
           imageBytes: imageBytes,
@@ -313,20 +177,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
 
       EasyLoading.showSuccess('Profile updated successfully');
-
-      // Get the newest user information from MySQL.
       final updatedUser = await _mysqlService.getUserById(userId);
 
       if (!mounted) return;
-
       Navigator.pop(context, updatedUser);
     } catch (e) {
       if (!mounted) return;
-
       EasyLoading.showError('Failed to update profile');
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -338,7 +199,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // ============================================================
-  // PROFILE IMAGE
+  // PROFILE IMAGE WIDGET
   // ============================================================
 
   Widget _buildProfileImage() {
@@ -367,7 +228,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     final String initial = widget.user.fullName.isNotEmpty
-        ? widget.user.fullName[0].toUpperCase()
+        ? widget.user.fullName.toUpperCase()
         : '?';
 
     return Container(
@@ -379,21 +240,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         borderRadius: BorderRadius.circular(28),
       ),
-      child: Center(
-        child: Text(
-          initial,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 42,
-            fontWeight: FontWeight.bold,
-          ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 42,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
   // ============================================================
-  // TEXT FIELD
+  // TEXT FIELD WIDGET
   // ============================================================
 
   Widget _buildTextField({
@@ -414,9 +274,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             color: Color(0xFF1E1E24),
           ),
         ),
-
         const SizedBox(height: 8),
-
         TextField(
           controller: controller,
           keyboardType: keyboardType,
@@ -429,13 +287,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.orange, width: 1.5),
+              borderSide: const BorderSide(
+                color: Colors.orange,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -447,7 +304,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F4),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF8F4),
         elevation: 0,
@@ -457,19 +313,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
         child: Column(
           children: [
-            // ----------------------------------------------------
-            // PROFILE IMAGE
-            // ----------------------------------------------------
             Center(
               child: Stack(
                 children: [
                   _buildProfileImage(),
-
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -481,7 +332,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         decoration: BoxDecoration(
                           color: Colors.orange,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 3,
+                          ),
                         ),
                         child: const Icon(
                           Icons.camera_alt_rounded,
@@ -494,24 +348,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 30),
-
-            // ----------------------------------------------------
-            // NAME
-            // ----------------------------------------------------
             _buildTextField(
               label: 'Full Name',
               hint: 'Enter your full name',
               controller: _nameController,
               icon: Icons.person_outline_rounded,
             ),
-
             const SizedBox(height: 20),
-
-            // ----------------------------------------------------
-            // EMAIL
-            // ----------------------------------------------------
             _buildTextField(
               label: 'Email Address',
               hint: 'Enter your email',
@@ -519,24 +363,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
             ),
-
             const SizedBox(height: 20),
-
-            // ----------------------------------------------------
-            // ADDRESS
-            // ----------------------------------------------------
             _buildTextField(
               label: 'Address',
               hint: 'Enter your delivery address',
               controller: _addressController,
               icon: Icons.location_on_outlined,
             ),
-
             const SizedBox(height: 30),
-
-            // ----------------------------------------------------
-            // SAVE BUTTON
-            // ----------------------------------------------------
             SizedBox(
               width: double.infinity,
               height: 56,

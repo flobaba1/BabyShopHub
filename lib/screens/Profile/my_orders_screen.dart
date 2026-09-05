@@ -24,10 +24,14 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     _loadOrders();
   }
 
-  Future<void> _loadOrders() async {
-    final userId = UserSession.instance.userId;
+  // ...existing code...
 
-    if (userId == null) {
+  Future<void> _loadOrders() async {
+    final userId = await UserSession.getUserId();
+
+    if (userId == null || userId.isEmpty) {
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
         _errorMessage = 'Please log in to view your orders.';
@@ -43,8 +47,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       setState(() {
         _orders = orders;
         _isLoading = false;
+        _errorMessage = null;
       });
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
 
       setState(() {
@@ -53,6 +58,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       });
     }
   }
+
+// ...existing code...
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
