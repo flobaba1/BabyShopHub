@@ -52,7 +52,7 @@ class _CheckoutReviewScreenState
   }
 
   Future<void> _loadReviewItems() async {
-    final userId = UserSession.instance.userId;
+    final userId = UserSession.loggedUser?.id;
 
     if (userId == null) {
       setState(() {
@@ -139,7 +139,7 @@ class _CheckoutReviewScreenState
   Future<void> _placeOrder() async {
     if (_placingOrder) return;
 
-    final userId = UserSession.instance.userId;
+    final userId = UserSession.loggedUser?.id;
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
