@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
 
 class Product {
   final String id;
@@ -13,7 +12,7 @@ class Product {
   final double discount;
   final String? description;
   final DateTime createdAt;
-  final Uint8List? image; // Stores mediumblob binary data
+  final Uint8List? image;
 
   Product({
     required this.id,
@@ -30,46 +29,25 @@ class Product {
     this.image,
   });
 
-  /// Factory constructor to deserialize database row maps
-  factory Product.fromRow(Map<String, String?> row, {Uint8List? imageBlob}) {
+  factory Product.fromRow(Map<String, dynamic> row) {
     return Product(
-      id: row['id'] ?? '',
-      name: row['name'] ?? '',
-      categoryId: row['categoryId'] ?? '',
-      price: double.tryParse(row['price'] ?? '0.0') ?? 0.0,
-      quantity: int.tryParse(row['quantity'] ?? '0') ?? 0,
-      brand: row['brand'],
-      badge: row['badge'],
-      rating: double.tryParse(row['rating'] ?? '0.0') ?? 0.0,
-      discount: double.tryParse(row['discount'] ?? '0.0') ?? 0.0,
-      description: row['description'],
+      id: row['id']?.toString() ?? '',
+      name: row['name']?.toString() ?? '',
+      categoryId: row['categoryId']?.toString() ?? '',
+      price: double.tryParse(row['price']?.toString() ?? '0.0') ?? 0.0,
+      quantity: int.tryParse(row['quantity']?.toString() ?? '0') ?? 0,
+      brand: row['brand']?.toString(),
+      badge: row['badge']?.toString(),
+      rating: double.tryParse(row['rating']?.toString() ?? '0.0') ?? 0.0,
+      discount: double.tryParse(row['discount']?.toString() ?? '0.0') ?? 0.0,
+      description: row['description']?.toString(),
       createdAt: row['createdAt'] != null
-          ? DateTime.parse(row['createdAt']!)
+          ? (row['createdAt'] is DateTime
+                ? row['createdAt'] as DateTime
+                : DateTime.tryParse(row['createdAt'].toString()) ??
+                      DateTime.now())
           : DateTime.now(),
-      image: imageBlob,
+      image: null,
     );
-  }
-
-  Color _getBadgeColor(String badge) {
-    switch (badge.toLowerCase()) {
-      case 'organic':
-        return const Color(0xFF13A765);
-
-      case 'sale':
-        return const Color(0xFFFF3D3D);
-
-      case 'new':
-        return const Color(0xFF3685E8);
-
-      case 'top rated':
-      case 'best seller':
-        return const Color(0xFFFF6600);
-
-      case 'featured':
-        return const Color(0xFF8E5BEF);
-
-      default:
-        return const Color(0xFFFF6600);
-    }
   }
 }

@@ -48,28 +48,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Show loading indicator
       EasyLoading.show(status: 'Creating account...');
 
-      mysqlService.createUser(
-        fullName: _fullNameController.text.trim(),
-        email: _emailController.text.trim(),
-        plainPassword: _passwordController.text,
-      ).then((bool isSuccess) {
-        EasyLoading.dismiss();
+      mysqlService
+          .createUser(
+            fullName: _fullNameController.text.trim(),
+            email: _emailController.text.trim(),
+            plainPassword: _passwordController.text,
+          )
+          .then((bool isSuccess) {
+            EasyLoading.dismiss();
 
-        if (isSuccess) {
-          EasyLoading.showSuccess('User registered successfully!');
-          // Navigate to login or main dashboard
-          context.go('/login');
-        } else {
-          EasyLoading.showError('Failed to create account. Please try again.');
-        }
-      }).catchError((error) {
-        EasyLoading.dismiss();
-        
-        // Handle database errors, duplicate emails, network failures, etc.
-        final String errorMessage = error.toString().replaceAll('Exception: ', '');
-        EasyLoading.showError('Error: $errorMessage');
-      });
-        }
+            if (isSuccess) {
+              EasyLoading.showSuccess('User registered successfully!');
+              // Navigate to login or main dashboard
+              context.go('/login');
+            } else {
+              EasyLoading.showError(
+                'Failed to create account. Please try again.',
+              );
+            }
+          })
+          .catchError((error) {
+            EasyLoading.dismiss();
+
+            // Handle database errors, duplicate emails, network failures, etc.
+            final String errorMessage = error.toString().replaceAll(
+              'Exception: ',
+              '',
+            );
+            EasyLoading.showError('Error: $errorMessage');
+          });
+    }
   }
 
   @override
@@ -276,7 +284,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF5722).withOpacity(0.35),
+                        color: const Color(0xFFFF5722).withValues(alpha: 0.35),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),

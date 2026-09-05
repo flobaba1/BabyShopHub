@@ -1,4 +1,4 @@
-// lib/env/env.dart
+
 import 'package:envied/envied.dart';
 
 part 'env.g.dart';
@@ -6,7 +6,7 @@ part 'env.g.dart';
 @Envied(path: '.env')
 abstract class Env {
   @EnviedField(varName: 'MYSQL_HOST', obfuscate: true)
-  static final String mysqlHost = _Env.mysqlHost;
+  static final String mysqlHost = _Env.mysqlHost; 
 
   @EnviedField(varName: 'MYSQL_PORT')
   static final int mysqlPort = _Env.mysqlPort;

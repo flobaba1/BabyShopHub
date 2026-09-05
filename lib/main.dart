@@ -80,3 +80,37 @@ class NoStretchScrollBehavior extends MaterialScrollBehavior {
     return child;
   }
 }
+
+// import 'package:baby_shop_hub/core/mysql_service.dart';
+// import 'package:flutter/material.dart';
+// import 'package:baby_shop_hub/core/router.dart';
+// import 'package:baby_shop_hub/core/onboarding_service.dart';
+// import 'package:flutter_easyloading/flutter_easyloading.dart';
+// import 'dart:developer';
+
+// void main() {
+//   WidgetsFlutterBinding.ensureInitialized();
+
+//   runApp(const BabyShopApp());
+// }
+
+// class BabyShopApp extends StatelessWidget {
+//   const BabyShopApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp.router(
+//       title: 'BabyShopHub',
+//       debugShowCheckedModeBanner: false,
+
+//       theme: ThemeData(
+//         primarySwatch: Colors.orange,
+//         scaffoldBackgroundColor: Colors.white,
+//         fontFamily: 'Roboto',
+//       ),
+
+//       // Open Profile directly
+//       routerConfig: createRouter('/profile'),
+//     );
+//   }
+// }

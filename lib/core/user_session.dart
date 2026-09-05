@@ -73,6 +73,7 @@ class UserSession {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyUserId);
   }
+ 
 
   /// Clear ONLY session-related data during explicit logout
   /// Preserves onboarding flags and other app preferences
@@ -83,4 +84,5 @@ class UserSession {
       await prefs.remove(key);
     }
   }
+}
 }
