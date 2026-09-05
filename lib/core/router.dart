@@ -142,6 +142,7 @@ import 'package:baby_shop_hub/screens/app/checkout/payment.dart';
 import 'package:baby_shop_hub/screens/app/checkout/review.dart';
 import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
 import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart';
+import 'package:baby_shop_hub/screens/auth/OTPauth.dart';
 import 'package:baby_shop_hub/screens/app/products/all_products.dart';
 import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
 import 'package:baby_shop_hub/screens/Profile/my_orders_screen.dart';
@@ -232,6 +233,11 @@ GoRouter createRouter(String initialRoute) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+
+      GoRoute(
+        path: '/otp',
+        builder: (context, state) => const OtpScreen(),
       ),
 
       GoRoute(

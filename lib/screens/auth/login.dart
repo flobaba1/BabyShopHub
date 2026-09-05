@@ -3,6 +3,8 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/core/mysql_service.dart';
 import 'package:baby_shop_hub/core/user_session.dart';
+import 'package:baby_shop_hub/utilities/crypto_util.dart';
+import 'package:baby_shop_hub/utilities/email_sender.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,6 +30,38 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _generateOTPAndNavigate(user) async {
+    final String otpCode = CryptoUtils.generateOtp(length: 6);
+
+    // Store the OTP in the database with a 4-minute expiry
+    final String? otpId = await mysqlService.createOTP(
+      userId: user.id,
+      code: otpCode,
+    );
+
+    if (otpId != null) {
+      // Send the OTP via email
+      final bool isEmailSent = await EmailService.sendOtp(
+        recipientEmail: user.email,
+        recipientName: user.fullName.split(' ').first,
+        otp: otpCode,
+      );
+
+      EasyLoading.dismiss();
+
+      if (isEmailSent) {
+        // Navigate to the OTP verification screen
+        user.metadata['otpId'] = otpId; // Store the OTP ID in the user object
+        context.push('/otp', extra: user);
+      } else {
+        EasyLoading.showError('Failed to send OTP. Please try again later.');
+      }
+    } else {
+      EasyLoading.dismiss();
+      EasyLoading.showError('Failed to generate OTP. Please try again later.');
+    }
+  }
+
   // ============================================================
   // LOGIN
   // ============================================================
@@ -45,11 +79,18 @@ class _LoginScreenState extends State<LoginScreen> {
         )
         .then((user) {
           EasyLoading.dismiss();
+          if (user.status != 'Active') {
+            EasyLoading.showError('Your account is ${user.status}. Please contact support.');
+            return;
+          }
+          
+          if (user.use2FA) {
+            // Navigate to the 2FA verification screen
+            _generateOTPAndNavigate(user);
+            return;
+          }
 
-          // ======================================================
-          // SAVE THE LOGGED-IN USER'S UNIQUE DATABASE ID
-          // ======================================================
-          UserSession.instance.login(user.id);
+          UserSession.saveUserSession(user);
 
           EasyLoading.showSuccess('Login successful!');
 
