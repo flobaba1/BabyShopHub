@@ -3,19 +3,19 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:baby_shop_hub/utilities/crypto_util.dart'; // Adjust path as needed
-
+ 
 class EmailService {
   static const String _baseUrl = 'https://api.emailjs.com/api/v1.0/email/send';
-
+ 
   static String _serviceId = Env.emailjsServiceId;
   static String _publicKey = Env.emailjsPublicKey;
   static String _privateKey = Env.emailjsPrivateKey;
   static String _userId = Env.emailjsUserId;
-
+ 
   // EmailJS Template IDs
   static String _otpTemplateId = Env.emailjsOtpTemplateId;
   static String _resetPasswordTemplateId = Env.emailjsResetPasswordTemplateId;
-
+ 
   /// Sends a single-use OTP to the specified [recipientEmail]
   static Future<bool> sendOtp({
     required String recipientEmail,
@@ -23,40 +23,40 @@ class EmailService {
     required String otp, // Default OTP length is 6 digits
   }) async {
     // Generate 6-digit numeric OTP using CryptoUtils
-
+ 
     final Map<String, dynamic> templateParams = {
       'email': recipientEmail,
       'firstName': recipientName,
       'passcode': otp,
       'companyName': 'Baby Shop Hub'
     };
-
+ 
     return _sendEmail(
       templateId: _otpTemplateId,
       templateParams: templateParams,
     );
   }
-
+ 
   /// Sends a randomly generated temporary password to the specified [recipientEmail]
   static Future<bool> resetPassword({
     required String recipientEmail,
     required String recipientName,
     required String newPlainPassword,
   }) async {
-
+ 
     final Map<String, dynamic> templateParams = {
       'email': recipientEmail,
       'firstName': recipientName,
       'password': newPlainPassword,
       'companyName': 'Baby Shop Hub'
     };
-
+ 
     return _sendEmail(
       templateId: _resetPasswordTemplateId,
       templateParams: templateParams,
     );
   }
-
+ 
   /// Core HTTP handler executing the EmailJS POST request
   static Future<bool> _sendEmail({
     required String templateId,
@@ -64,7 +64,7 @@ class EmailService {
   }) async {
     try {
       final Uri url = Uri.parse(_baseUrl);
-
+ 
       final Map<String, dynamic> body = {
         'service_id': _serviceId,
         'template_id': templateId,
@@ -72,7 +72,7 @@ class EmailService {
         'accessToken': _privateKey,
         'template_params': templateParams,
       };
-
+ 
       final response = await http.post(
         url,
         headers: {
@@ -80,7 +80,7 @@ class EmailService {
         },
         body: jsonEncode(body),
       );
-
+ 
       if (response.statusCode == 200) {
         log('EmailJS: Email dispatched successfully.');
         return true;
