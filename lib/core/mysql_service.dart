@@ -51,6 +51,26 @@ class MySQLService {
   // ===========================================================================
   // AUTHENTICATION & USERS
 
+  // ===========================================================================
+  // AUTHENTICATION & USERS
+
+  Future<bool> updateUserProfile({
+    required String userId,
+    required String fullName,
+    required String email,
+    required String? address,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      "UPDATE Users SET fullName = :fullName, email = :email, address = :address WHERE id = :id",
+      {"fullName": fullName, "email": email, "address": address, "id": userId},
+    );
+
+    return result.affectedRows.toInt() > 0;
+  }
+
+  // ... rest of your code stays exactly the same
 
   Future<bool> createUser({
     required String fullName,
@@ -81,8 +101,8 @@ class MySQLService {
 
     return result.affectedRows.toInt() > 0;
   }
-  
-   ///  Fetch all registered users
+
+  ///  Fetch all registered users
   Future<List<User>> fetchAllUsers() async {
     final conn = await connection;
     final results = await conn.execute(
@@ -97,7 +117,7 @@ class MySQLService {
 
     return users;
   }
-  
+
   // Fetch recent 5 orders from MySQL
   Future<List<RecentOrder>> fetchRecentOrders() async {
     final conn = await connection;
@@ -173,8 +193,8 @@ class MySQLService {
 
     return User.fromRow(row);
   }
-  
-    ///  Fetch total orders count grouped by userId
+
+  ///  Fetch total orders count grouped by userId
   Future<Map<String, int>> fetchUserOrderCounts() async {
     final conn = await connection;
     final results = await conn.execute(
@@ -194,7 +214,7 @@ class MySQLService {
     return counts;
   }
 
-	  ///  Update user status 
+  ///  Update user status
   Future<bool> updateUserStatus(String userId, String status) async {
     final conn = await connection;
     final result = await conn.execute(
@@ -204,13 +224,28 @@ class MySQLService {
 
     return result.affectedRows.toInt() > 0;
   }
-  
-   Future<User?> validateUserEmail(String userEmail) async {
+
+  /// Fetch a user by their unique user ID.
+  Future<User> getUserById(String userId) async {
     final conn = await connection;
-  
+
+    final result = await conn.execute("SELECT * FROM Users WHERE id = :id", {
+      "id": userId,
+    });
+
+    if (result.rows.isEmpty) {
+      throw Exception("User not found.");
+    }
+
+    return User.fromRow(result.rows.first.assoc());
+  }
+
+  Future<User?> validateUserEmail(String userEmail) async {
+    final conn = await connection;
+
     final result = await conn.execute(
       "SELECT * FROM Users WHERE email = :email",
-      {"email": userEmail}
+      {"email": userEmail},
     );
 
     if (result.rows.isEmpty) {
@@ -221,15 +256,18 @@ class MySQLService {
   }
 
   /// Hashes and updates a user's password in the database.
-  /// 
+  ///
   /// Supports target identification via either [userId] or [email].
   Future<bool> updateUserPassword({
     String? userId,
     String? email,
     required String newPlainPassword,
   }) async {
-    if ((userId == null || userId.isEmpty) && (email == null || email.isEmpty)) {
-      throw ArgumentError("Either 'userId' or 'email' must be provided to update password.");
+    if ((userId == null || userId.isEmpty) &&
+        (email == null || email.isEmpty)) {
+      throw ArgumentError(
+        "Either 'userId' or 'email' must be provided to update password.",
+      );
     }
 
     final conn = await connection;
@@ -242,16 +280,15 @@ class MySQLService {
         ? "UPDATE Users SET password = :password WHERE id = :identifier"
         : "UPDATE Users SET password = :password WHERE email = :identifier";
 
-    final String identifier = (userId != null && userId.isNotEmpty) ? userId : email!;
+    final String identifier = (userId != null && userId.isNotEmpty)
+        ? userId
+        : email!;
 
     try {
-      final result = await conn.execute(
-        query,
-        {
-          "password": hashedPassword,
-          "identifier": identifier,
-        },
-      );
+      final result = await conn.execute(query, {
+        "password": hashedPassword,
+        "identifier": identifier,
+      });
 
       if (result.affectedRows.toInt() == 0) {
         throw Exception("User not found with the provided details.");
@@ -262,7 +299,7 @@ class MySQLService {
       throw Exception("Failed to update user password: ${e.toString()}");
     }
   }
-  
+
   Future<List<DashboardMetric>> fetchDashboardMetrics() async {
     final conn = await connection;
 
@@ -699,7 +736,7 @@ class MySQLService {
     return null;
   }
 
-    Future<List<Product>> fetchProductsPaginated({
+  Future<List<Product>> fetchProductsPaginated({
     required int offset,
     required int limit,
   }) async {
@@ -718,8 +755,8 @@ class MySQLService {
       return Product.fromRow(row.assoc());
     }).toList();
   }
-  
-    /// Fetch Products by Category ID
+
+  /// Fetch Products by Category ID
   Future<List<Product>> fetchProductsByCategory(String categoryId) async {
     final conn = await connection;
     final result = await conn.execute(
@@ -816,8 +853,7 @@ class MySQLService {
     return true;
   }
 
-	
-    // ===========================================================================
+  // ===========================================================================
   // CATEGORIES
   // ===========================================================================
 
@@ -847,9 +883,8 @@ class MySQLService {
       };
     }).toList();
   }
-  
+
   // USER CARDS CRUD
-  
 
   Future<bool> addUserCard({
     required String userId,
@@ -1037,11 +1072,7 @@ class MySQLService {
         DATE_ADD(CURRENT_TIMESTAMP, INTERVAL :expiryMinutes MINUTE)
       )
       ''',
-      {
-        "userId": userId,
-        "code": code,
-        "expiryMinutes": expiryMinutes,
-      },
+      {"userId": userId, "code": code, "expiryMinutes": expiryMinutes},
     );
 
     if (result.affectedRows.toInt() > 0) {
@@ -1075,10 +1106,7 @@ class MySQLService {
         AND isUsed = 0 
         AND expiresAt > CURRENT_TIMESTAMP
       ''',
-      {
-        "otpId": otpId,
-        "userId": userId,
-      },
+      {"otpId": otpId, "userId": userId},
     );
 
     if (result.rows.isEmpty) {
@@ -1094,21 +1122,19 @@ class MySQLService {
     }
 
     // 3. Mark as used and delete the record
-    await conn.execute(
-      "UPDATE userOTPs SET isUsed = 1 WHERE id = :otpId",
-      {"otpId": otpId},
-    );
+    await conn.execute("UPDATE userOTPs SET isUsed = 1 WHERE id = :otpId", {
+      "otpId": otpId,
+    });
 
-    await conn.execute(
-      "DELETE FROM userOTPs WHERE id = :otpId",
-      {"otpId": otpId},
-    );
+    await conn.execute("DELETE FROM userOTPs WHERE id = :otpId", {
+      "otpId": otpId,
+    });
 
     return true;
   }
 
   /// Updates an existing OTP record with a new code and resets its expiration duration.
-  /// 
+  ///
   /// Automatically updates [createdAt] to CURRENT_TIMESTAMP and calculates
   /// [expiresAt] based on [expiryMinutes].
   Future<bool> updateUserOtp({
@@ -1128,11 +1154,7 @@ class MySQLService {
             expiresAt = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL :expiryMinutes MINUTE)
         WHERE id = :otpId
         ''',
-        {
-          "newOtp": newOtp,
-          "otpId": otpId,
-          "expiryMinutes": expiryMinutes,
-        },
+        {"newOtp": newOtp, "otpId": otpId, "expiryMinutes": expiryMinutes},
       );
 
       if (result.affectedRows.toInt() == 0) {
@@ -1155,35 +1177,31 @@ class MySQLService {
       _connection = null;
     }
   }
-  
+
   // ORDERS & CHECKOUT
 
+  Future<Map<String, dynamic>> getCheckoutItems({
+    required String userId,
+    required List<String> cartItemIds,
+  }) async {
+    if (cartItemIds.isEmpty) {
+      throw Exception('No items selected for checkout.');
+    }
 
-Future<Map<String, dynamic>> getCheckoutItems({
-  required String userId,
-  required List<String> cartItemIds,
-}) async {
-  if (cartItemIds.isEmpty) {
-    throw Exception('No items selected for checkout.');
-  }
+    final conn = await connection;
 
-  final conn = await connection;
+    final placeholders = List.generate(
+      cartItemIds.length,
+      (index) => ':cartId$index',
+    ).join(', ');
 
-  final placeholders = List.generate(
-    cartItemIds.length,
-    (index) => ':cartId$index',
-  ).join(', ');
+    final params = <String, dynamic>{'userId': userId};
 
-  final params = <String, dynamic>{
-    'userId': userId,
-  };
+    for (int i = 0; i < cartItemIds.length; i++) {
+      params['cartId$i'] = cartItemIds[i];
+    }
 
-  for (int i = 0; i < cartItemIds.length; i++) {
-    params['cartId$i'] = cartItemIds[i];
-  }
-
-  final result = await conn.execute(
-    '''
+    final result = await conn.execute('''
     SELECT
       c.id AS cartItemId,
       c.productId,
@@ -1204,53 +1222,45 @@ Future<Map<String, dynamic>> getCheckoutItems({
       AND c.id IN ($placeholders)
 
     ORDER BY c.createdAt DESC
-    ''',
-    params,
-  );
+    ''', params);
 
-  return {
-    'rows': result.rows,
-  };
-}
-
-
-Future<String> createOrder({
-  required String userId,
-  required List<String> cartItemIds,
-  required String shippingAddress,
-  required String paymentMethod,
-  String? notes,
-}) async {
-  if (cartItemIds.isEmpty) {
-    throw Exception('No items selected for checkout.');
+    return {'rows': result.rows};
   }
 
-  final conn = await connection;
-
-  try {
-    // ------------------------------------------------------------
-    // START TRANSACTION
-    // ------------------------------------------------------------
-    await conn.execute('START TRANSACTION');
-
-    final placeholders = List.generate(
-      cartItemIds.length,
-      (index) => ':cartId$index',
-    ).join(', ');
-
-    final params = <String, dynamic>{
-      'userId': userId,
-    };
-
-    for (int i = 0; i < cartItemIds.length; i++) {
-      params['cartId$i'] = cartItemIds[i];
+  Future<String> createOrder({
+    required String userId,
+    required List<String> cartItemIds,
+    required String shippingAddress,
+    required String paymentMethod,
+    String? notes,
+  }) async {
+    if (cartItemIds.isEmpty) {
+      throw Exception('No items selected for checkout.');
     }
 
-    // ------------------------------------------------------------
-    // GET SELECTED CART ITEMS + CURRENT PRODUCT PRICES/STOCK
-    // ------------------------------------------------------------
-    final cartResult = await conn.execute(
-      '''
+    final conn = await connection;
+
+    try {
+      // ------------------------------------------------------------
+      // START TRANSACTION
+      // ------------------------------------------------------------
+      await conn.execute('START TRANSACTION');
+
+      final placeholders = List.generate(
+        cartItemIds.length,
+        (index) => ':cartId$index',
+      ).join(', ');
+
+      final params = <String, dynamic>{'userId': userId};
+
+      for (int i = 0; i < cartItemIds.length; i++) {
+        params['cartId$i'] = cartItemIds[i];
+      }
+
+      // ------------------------------------------------------------
+      // GET SELECTED CART ITEMS + CURRENT PRODUCT PRICES/STOCK
+      // ------------------------------------------------------------
+      final cartResult = await conn.execute('''
       SELECT
         c.id AS cartItemId,
         c.productId,
@@ -1267,123 +1277,106 @@ Future<String> createOrder({
 
       WHERE c.userId = :userId
         AND c.id IN ($placeholders)
-      ''',
-      params,
-    );
+      ''', params);
 
-    if (cartResult.rows.isEmpty) {
-      throw Exception(
-        'The selected cart items could not be found.',
-      );
-    }
+      if (cartResult.rows.isEmpty) {
+        throw Exception('The selected cart items could not be found.');
+      }
 
-    // Make sure every selected cart item still exists.
-    if (cartResult.rows.length != cartItemIds.length) {
-      throw Exception(
-        'One or more selected cart items are no longer available.',
-      );
-    }
-
-    double subtotal = 0.0;
-    double totalDiscount = 0.0;
-
-    final orderItems = <Map<String, dynamic>>[];
-
-    // ------------------------------------------------------------
-    // VALIDATE STOCK + CALCULATE TOTALS
-    // ------------------------------------------------------------
-    for (final row in cartResult.rows) {
-      final data = row.assoc();
-
-      final cartItemId = data['cartItemId'] ?? '';
-      final productId = data['productId'] ?? '';
-
-      final quantity =
-          int.tryParse(data['cartQuantity'] ?? '0') ?? 0;
-
-      final stockQuantity =
-          int.tryParse(data['stockQuantity'] ?? '0') ?? 0;
-
-      final unitPrice =
-          double.tryParse(data['price'] ?? '0') ?? 0.0;
-
-      final discountPercentage =
-          double.tryParse(data['discount'] ?? '0') ?? 0.0;
-
-      if (quantity <= 0) {
+      // Make sure every selected cart item still exists.
+      if (cartResult.rows.length != cartItemIds.length) {
         throw Exception(
-          'Invalid quantity for product $productId.',
+          'One or more selected cart items are no longer available.',
         );
       }
 
-      if (stockQuantity <= 0) {
-        throw Exception(
-          'One of the selected products is out of stock.',
-        );
+      double subtotal = 0.0;
+      double totalDiscount = 0.0;
+
+      final orderItems = <Map<String, dynamic>>[];
+
+      // ------------------------------------------------------------
+      // VALIDATE STOCK + CALCULATE TOTALS
+      // ------------------------------------------------------------
+      for (final row in cartResult.rows) {
+        final data = row.assoc();
+
+        final cartItemId = data['cartItemId'] ?? '';
+        final productId = data['productId'] ?? '';
+
+        final quantity = int.tryParse(data['cartQuantity'] ?? '0') ?? 0;
+
+        final stockQuantity = int.tryParse(data['stockQuantity'] ?? '0') ?? 0;
+
+        final unitPrice = double.tryParse(data['price'] ?? '0') ?? 0.0;
+
+        final discountPercentage =
+            double.tryParse(data['discount'] ?? '0') ?? 0.0;
+
+        if (quantity <= 0) {
+          throw Exception('Invalid quantity for product $productId.');
+        }
+
+        if (stockQuantity <= 0) {
+          throw Exception('One of the selected products is out of stock.');
+        }
+
+        if (quantity > stockQuantity) {
+          throw Exception(
+            'Only $stockQuantity item(s) remain in stock for one of your selected products.',
+          );
+        }
+
+        final itemSubtotal = unitPrice * quantity;
+
+        final itemDiscount = itemSubtotal * (discountPercentage / 100);
+
+        final itemTotal = itemSubtotal - itemDiscount;
+
+        subtotal += itemSubtotal;
+        totalDiscount += itemDiscount;
+
+        orderItems.add({
+          'cartItemId': cartItemId,
+          'productId': productId,
+          'quantity': quantity,
+          'unitPrice': unitPrice,
+          'discount': itemDiscount,
+          'totalPrice': itemTotal,
+        });
       }
 
-      if (quantity > stockQuantity) {
-        throw Exception(
-          'Only $stockQuantity item(s) remain in stock for one of your selected products.',
-        );
+      // ------------------------------------------------------------
+      // SHIPPING
+      // ------------------------------------------------------------
+      //
+      // Your current cart implementation uses a delivery fee of 0
+      // because the actual business rule has not been defined yet.
+      //
+      const double shippingFee = 0.0;
+
+      final totalAmount = subtotal - totalDiscount + shippingFee;
+
+      // ------------------------------------------------------------
+      // GENERATE ORDER ID
+      // ------------------------------------------------------------
+      final uuidResult = await conn.execute('SELECT UUID() AS orderId');
+
+      if (uuidResult.rows.isEmpty) {
+        throw Exception('Unable to generate order ID.');
       }
 
-      final itemSubtotal = unitPrice * quantity;
+      final orderId = uuidResult.rows.first.assoc()['orderId'] ?? '';
 
-      final itemDiscount =
-          itemSubtotal * (discountPercentage / 100);
+      if (orderId.isEmpty) {
+        throw Exception('Unable to generate order ID.');
+      }
 
-      final itemTotal =
-          itemSubtotal - itemDiscount;
-
-      subtotal += itemSubtotal;
-      totalDiscount += itemDiscount;
-
-      orderItems.add({
-        'cartItemId': cartItemId,
-        'productId': productId,
-        'quantity': quantity,
-        'unitPrice': unitPrice,
-        'discount': itemDiscount,
-        'totalPrice': itemTotal,
-      });
-    }
-
-    // ------------------------------------------------------------
-    // SHIPPING
-    // ------------------------------------------------------------
-    //
-    // Your current cart implementation uses a delivery fee of 0
-    // because the actual business rule has not been defined yet.
-    //
-    const double shippingFee = 0.0;
-
-    final totalAmount =
-        subtotal - totalDiscount + shippingFee;
-
-    // ------------------------------------------------------------
-    // GENERATE ORDER ID
-    // ------------------------------------------------------------
-    final uuidResult = await conn.execute(
-      'SELECT UUID() AS orderId',
-    );
-
-    if (uuidResult.rows.isEmpty) {
-      throw Exception('Unable to generate order ID.');
-    }
-
-    final orderId =
-        uuidResult.rows.first.assoc()['orderId'] ?? '';
-
-    if (orderId.isEmpty) {
-      throw Exception('Unable to generate order ID.');
-    }
-
-    // ------------------------------------------------------------
-    // CREATE ORDER
-    // ------------------------------------------------------------
-    await conn.execute(
-      '''
+      // ------------------------------------------------------------
+      // CREATE ORDER
+      // ------------------------------------------------------------
+      await conn.execute(
+        '''
       INSERT INTO Orders (
         id,
         userId,
@@ -1409,25 +1402,25 @@ Future<String> createOrder({
         :notes
       )
       ''',
-      {
-        'id': orderId,
-        'userId': userId,
-        'totalAmount': totalAmount,
-        'subTotal': subtotal,
-        'discount': totalDiscount,
-        'shippingFee': shippingFee,
-        'paymentMethod': paymentMethod,
-        'shippingAddress': shippingAddress,
-        'notes': notes,
-      },
-    );
+        {
+          'id': orderId,
+          'userId': userId,
+          'totalAmount': totalAmount,
+          'subTotal': subtotal,
+          'discount': totalDiscount,
+          'shippingFee': shippingFee,
+          'paymentMethod': paymentMethod,
+          'shippingAddress': shippingAddress,
+          'notes': notes,
+        },
+      );
 
-    // ------------------------------------------------------------
-    // CREATE ORDER ITEMS + REDUCE STOCK
-    // ------------------------------------------------------------
-    for (final item in orderItems) {
-      await conn.execute(
-        '''
+      // ------------------------------------------------------------
+      // CREATE ORDER ITEMS + REDUCE STOCK
+      // ------------------------------------------------------------
+      for (final item in orderItems) {
+        await conn.execute(
+          '''
         INSERT INTO OrderItems (
           id,
           orderId,
@@ -1447,89 +1440,79 @@ Future<String> createOrder({
           :totalPrice
         )
         ''',
-        {
-          'orderId': orderId,
-          'productId': item['productId'],
-          'quantity': item['quantity'],
-          'unitPrice': item['unitPrice'],
-          'discount': item['discount'],
-          'totalPrice': item['totalPrice'],
-        },
-      );
+          {
+            'orderId': orderId,
+            'productId': item['productId'],
+            'quantity': item['quantity'],
+            'unitPrice': item['unitPrice'],
+            'discount': item['discount'],
+            'totalPrice': item['totalPrice'],
+          },
+        );
 
-      // Re-check stock while reducing it.
-      final stockUpdate = await conn.execute(
-        '''
+        // Re-check stock while reducing it.
+        final stockUpdate = await conn.execute(
+          '''
         UPDATE Products
         SET quantity = quantity - :quantity
         WHERE id = :productId
           AND quantity >= :quantity
         ''',
-        {
-          'productId': item['productId'],
-          'quantity': item['quantity'],
-        },
-      );
-
-      if (stockUpdate.affectedRows.toInt() == 0) {
-        throw Exception(
-          'Stock changed while placing your order. Please try again.',
+          {'productId': item['productId'], 'quantity': item['quantity']},
         );
+
+        if (stockUpdate.affectedRows.toInt() == 0) {
+          throw Exception(
+            'Stock changed while placing your order. Please try again.',
+          );
+        }
       }
-    }
 
-    // ------------------------------------------------------------
-    // REMOVE ONLY PURCHASED CART ITEMS
-    // ------------------------------------------------------------
-    final deleteParams = <String, dynamic>{
-      'userId': userId,
-    };
+      // ------------------------------------------------------------
+      // REMOVE ONLY PURCHASED CART ITEMS
+      // ------------------------------------------------------------
+      final deleteParams = <String, dynamic>{'userId': userId};
 
-    for (int i = 0; i < cartItemIds.length; i++) {
-      deleteParams['deleteCartId$i'] = cartItemIds[i];
-    }
+      for (int i = 0; i < cartItemIds.length; i++) {
+        deleteParams['deleteCartId$i'] = cartItemIds[i];
+      }
 
-    final deletePlaceholders = List.generate(
-      cartItemIds.length,
-      (index) => ':deleteCartId$index',
-    ).join(', ');
+      final deletePlaceholders = List.generate(
+        cartItemIds.length,
+        (index) => ':deleteCartId$index',
+      ).join(', ');
 
-    await conn.execute(
-      '''
+      await conn.execute('''
       DELETE FROM CartItems
       WHERE userId = :userId
         AND id IN ($deletePlaceholders)
-      ''',
-      deleteParams,
-    );
+      ''', deleteParams);
 
-    // ------------------------------------------------------------
-    // COMMIT
-    // ------------------------------------------------------------
-    await conn.execute('COMMIT');
+      // ------------------------------------------------------------
+      // COMMIT
+      // ------------------------------------------------------------
+      await conn.execute('COMMIT');
 
-    return orderId;
-  } catch (e) {
-    // ------------------------------------------------------------
-    // ROLLBACK EVERYTHING
-    // ------------------------------------------------------------
-    try {
-      await conn.execute('ROLLBACK');
-    } catch (_) {
-      // Ignore rollback failure and preserve original exception.
+      return orderId;
+    } catch (e) {
+      // ------------------------------------------------------------
+      // ROLLBACK EVERYTHING
+      // ------------------------------------------------------------
+      try {
+        await conn.execute('ROLLBACK');
+      } catch (_) {
+        // Ignore rollback failure and preserve original exception.
+      }
+
+      throw Exception('Failed to place order: ${e.toString()}');
     }
-
-    throw Exception(
-      'Failed to place order: ${e.toString()}',
-    );
   }
-}
 
-Future<List<Map<String, String?>>> getUserOrders(String userId) async {
-  final conn = await connection;
+  Future<List<Map<String, String?>>> getUserOrders(String userId) async {
+    final conn = await connection;
 
-  final result = await conn.execute(
-    '''
+    final result = await conn.execute(
+      '''
     SELECT
       o.id,
       o.status,
@@ -1559,11 +1542,11 @@ Future<List<Map<String, String?>>> getUserOrders(String userId) async {
       o.updatedAt
     ORDER BY o.createdAt DESC
     ''',
-    {'userId': userId},
-  );
+      {'userId': userId},
+    );
 
-  return result.rows.map((row) => row.assoc()).toList();
-}
+    return result.rows.map((row) => row.assoc()).toList();
+  }
 
   Future<void> dispose() async {
     _idleTimer?.cancel();

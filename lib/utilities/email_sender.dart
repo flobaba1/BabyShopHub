@@ -28,7 +28,7 @@ class EmailService {
       'email': recipientEmail,
       'firstName': recipientName,
       'passcode': otp,
-      'companyName': 'Baby Shop Hub'
+      'companyName': 'Baby Shop Hub',
     };
 
     return _sendEmail(
@@ -43,12 +43,11 @@ class EmailService {
     required String recipientName,
     required String newPlainPassword,
   }) async {
-
     final Map<String, dynamic> templateParams = {
       'email': recipientEmail,
       'firstName': recipientName,
       'password': newPlainPassword,
-      'companyName': 'Baby Shop Hub'
+      'companyName': 'Baby Shop Hub',
     };
 
     return _sendEmail(
@@ -75,9 +74,7 @@ class EmailService {
 
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
 
