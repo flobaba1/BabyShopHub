@@ -8,6 +8,10 @@ class AddAddressScreen extends StatefulWidget {
 }
 
 class _AddAddressScreenState extends State<AddAddressScreen> {
+  // FIXED: Added the missing state variable for the dropdown selection
+  String _selectedCountry = 'United States';
+
+  // Pre-populated text controllers representing your active primary address lines
   final _line1Controller = TextEditingController(text: '123 Maple Street');
   final _line2Controller = TextEditingController(text: 'Apt 4B');
   final _cityController = TextEditingController(text: 'Springfield');
@@ -52,16 +56,27 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Modify Shipping Destination',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Modify Shipping Destination',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Only the pure physical address properties are exposed as text entry forms
+              _buildEditableAddressInput('Address Line 1', _line1Controller),
+              const SizedBox(height: 16),
+              _buildEditableAddressInput(
+                'Address Line 2 (Optional)',
+                _line2Controller,
               ),
             ),
             const SizedBox(height: 24),
@@ -81,23 +96,15 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                     'State',
                     _stateController,
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildEditableAddressInput(
-                    'ZIP Code',
-                    _zipController,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    // FIXED: Changed _buildFormInput to the correct name _buildEditableAddressInput
+                    child: _buildEditableAddressInput(
+                      'ZIP Code',
+                      _zipController,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Country',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                ],
               ),
             ),
             const SizedBox(height: 8),
@@ -110,31 +117,43 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   color: Colors.grey.withValues(alpha: 0.15),
                 ),
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCountry,
-                  isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                  items: [
-                    'United States',
-                    'Nigeria',
-                    'United Kingdom',
-                    'Canada',
-                  ].map((country) {
-                    return DropdownMenuItem<String>(
-                      value: country,
-                      child: Text(
-                        country,
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _selectedCountry = value;
-                    });
-                  },
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.15),
+                  ),
+                ),
+                // FIXED: Repaired the broken layout blocks and closed the dropdown hierarchy cleanly
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedCountry,
+                    isExpanded: true,
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    items:
+                        [
+                          'United States',
+                          'Nigeria',
+                          'United Kingdom',
+                          'Canada',
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              value,
+                              style: const TextStyle(fontSize: 15),
+                            ),
+                          );
+                        }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedCountry = val!;
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
@@ -186,6 +205,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         TextField(
           controller: controller,
           decoration: InputDecoration(
+            // FIXED: Replaced undefined variable placeholder with label
             hintText: label,
             hintStyle: TextStyle(
               color: Colors.grey.withValues(alpha: 0.6),

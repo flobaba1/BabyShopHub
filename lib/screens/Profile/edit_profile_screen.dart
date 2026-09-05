@@ -35,9 +35,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.user.fullName);
     _emailController = TextEditingController(text: widget.user.email);
-    _addressController = TextEditingController(
-      text: widget.user.address ?? '',
-    );
+    _addressController = TextEditingController(text: widget.user.address ?? '');
   }
 
   @override
@@ -91,6 +89,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     _pickImage(ImageSource.camera);
                   },
                 ),
+                const SizedBox(height: 8),
                 ListTile(
                   leading: const Icon(
                     Icons.photo_library_rounded,
@@ -103,6 +102,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     _pickImage(ImageSource.gallery);
                   },
                 ),
+                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -120,17 +120,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         maxHeight: 1000,
       );
 
-      if (pickedFile == null || !mounted) return;
+      if (pickedFile == null) return;
 
       setState(() {
         _profileImage = File(pickedFile.path);
       });
     } catch (e) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to select image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to select image: $e')));
     }
   }
 
@@ -169,22 +168,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (_profileImage != null) {
         final Uint8List imageBytes = await _profileImage!.readAsBytes();
-
         await _mysqlService.updateUserProfileImage(
           userId: userId,
           imageBytes: imageBytes,
         );
       }
 
-      final updatedUser = await _mysqlService.getUserById(userId);
-
       if (!mounted) return;
 
       EasyLoading.showSuccess('Profile updated successfully');
+      final updatedUser = await _mysqlService.getUserById(userId);
+
+      if (!mounted) return;
       Navigator.pop(context, updatedUser);
     } catch (e) {
       if (!mounted) return;
-
       EasyLoading.showError('Failed to update profile');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -199,6 +197,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     }
   }
+
+  // ============================================================
+  // PROFILE IMAGE WIDGET
+  // ============================================================
 
   Widget _buildProfileImage() {
     if (_profileImage != null) {
@@ -225,8 +227,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
     }
 
-    final initial = widget.user.fullName.isNotEmpty
-        ? widget.user.fullName[0].toUpperCase()
+    final String initial = widget.user.fullName.isNotEmpty
+        ? widget.user.fullName.toUpperCase()
         : '?';
 
     return Container(
@@ -249,6 +251,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
     );
   }
+
+  // ============================================================
+  // TEXT FIELD WIDGET
+  // ============================================================
 
   Widget _buildTextField({
     required String label,

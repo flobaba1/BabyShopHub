@@ -1,29 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+// ==============================
+// AUTH
+// ==============================
 import 'package:baby_shop_hub/screens/auth/login.dart';
 import 'package:baby_shop_hub/screens/auth/signup.dart';
+import 'package:baby_shop_hub/screens/auth/forgotPassword.dart';
+import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
+import 'package:baby_shop_hub/screens/auth/OTPauth.dart';
+
+// ==============================
+// ONBOARDING
+// ==============================
+import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
+import 'package:baby_shop_hub/screens/onboarding/onboarding_three.dart';
+
+// ==============================
+// MAIN APP
+// ==============================
 import 'package:baby_shop_hub/screens/app/main_shell.dart';
 import 'package:baby_shop_hub/screens/app/homescreen/homescreen.dart';
-import 'package:baby_shop_hub/screens/onboarding/onboarding.dart';
-import 'package:baby_shop_hub/screens/auth/forgotPassword.dart';
-import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
 import 'package:baby_shop_hub/screens/app/categories/categories.dart';
-import 'package:baby_shop_hub/screens/app/dashboard/dashboard.dart';
-import 'package:baby_shop_hub/screens/onboarding/onboarding2.dart';
-import 'package:baby_shop_hub/screens/app/categories/categories.dart';
-import 'package:baby_shop_hub/screens/onboarding/onboarding_three.dart';
 import 'package:baby_shop_hub/screens/app/cart/cart.dart';
+
+// ==============================
+// PRODUCTS
+// ==============================
+import 'package:baby_shop_hub/screens/app/products/all_products.dart';
+import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
+
+// ==============================
+// CHECKOUT
+// ==============================
 import 'package:baby_shop_hub/screens/app/checkout/address.dart';
 import 'package:baby_shop_hub/screens/app/checkout/payment.dart';
 import 'package:baby_shop_hub/screens/app/checkout/review.dart';
-import 'package:baby_shop_hub/screens/auth/checkEmail.dart';
-import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart';
-import 'package:baby_shop_hub/screens/auth/OTPauth.dart';
-import 'package:baby_shop_hub/screens/app/products/all_products.dart';
-import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
+import 'package:baby_shop_hub/screens/app/checkout/order_success.dart';
+
+// ==============================
+// PROFILE
+// ==============================
 import 'package:baby_shop_hub/screens/Profile/my_orders_screen.dart';
 import 'package:baby_shop_hub/screens/Profile/profile_screen.dart';
-import 'package:baby_shop_hub/screens/app/checkout/order_success.dart';
+
+// ==============================
+// ADMIN
+// ==============================
+import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -34,21 +59,29 @@ GoRouter createRouter(String initialRoute) {
     initialLocation: initialRoute,
 
     routes: [
-      
-      // AUTH / ONBOARDING
-      
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      // ============================================================
+      // AUTHENTICATION
+      // ============================================================
+      GoRoute(
+        path: '/login',
+        builder: (context, state) {
+          return const LoginScreen();
+        },
+      ),
 
       GoRoute(
         path: '/signup',
-        builder: (context, state) => const RegisterScreen(),
+        builder: (context, state) {
+          return const RegisterScreen();
+        },
       ),
 
       GoRoute(
         path: '/forgot-password',
-        builder: (context, state) => const ForgotPassword(),
+        builder: (context, state) {
+          return const ForgotPassword();
+        },
       ),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
       GoRoute(
         path: '/checkEmail',
@@ -59,27 +92,43 @@ GoRouter createRouter(String initialRoute) {
         },
       ),
 
-      // SLIDE 1 (onboarding.dart)
+      GoRoute(
+        path: '/otp',
+        builder: (context, state) {
+          return const OtpScreen();
+        },
+      ),
+
+      // ============================================================
+      // ONBOARDING
+      // ============================================================
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        builder: (context, state) {
+          return const OnboardingScreen();
+        },
       ),
 
-      // SLIDE 2 (onboarding2.dart)
       GoRoute(
         path: '/onboarding2',
-        builder: (context, state) => const OnboardingScreenTwo(),
+        builder: (context, state) {
+          return const OnboardingScreenTwo();
+        },
       ),
 
-      // SLIDE 3 (onboarding_three.dart)
       GoRoute(
         path: '/onboarding3',
-        builder: (context, state) => const FastSafeDeliveryScreen(),
+        builder: (context, state) {
+          return const FastSafeDeliveryScreen();
+        },
       ),
 
+      // Keep this route too in case another screen already uses it.
       GoRoute(
         path: '/onboarding-three',
-        builder: (context, state) => const FastSafeDeliveryScreen(),
+        builder: (context, state) {
+          return const FastSafeDeliveryScreen();
+        },
       ),
 
       // ============================================================
@@ -102,44 +151,43 @@ GoRouter createRouter(String initialRoute) {
       // ============================================================
       // ADMIN
       // ============================================================
-      // PROFILE SCREEN
-      GoRoute(
-        path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
-      ),
-
-      GoRoute(
-        path: '/otp',
-        builder: (context, state) => const OtpScreen(),
-      ),
-
       GoRoute(
         path: '/admin',
-        builder: (context, state) => const AdminPanelScreen(),
+        builder: (context, state) {
+          return const AdminPanelScreen();
+        },
       ),
 
       // ============================================================
       // MAIN APPLICATION SHELL
       // ============================================================
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return MainShell(navigationShell: navigationShell);
-        },
+        builder:
+            (
+              BuildContext context,
+              GoRouterState state,
+              StatefulNavigationShell navigationShell,
+            ) {
+              return MainShell(navigationShell: navigationShell);
+            },
+
         branches: [
           // ========================================================
-          // BRANCH 0 → HOME
+          // BRANCH 0 — HOME
           // ========================================================
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (context, state) => const HomeScreen(),
+                builder: (context, state) {
+                  return const HomeScreen();
+                },
               ),
             ],
           ),
 
           // ========================================================
-          // BRANCH 1 → CATEGORIES
+          // BRANCH 1 — CATEGORIES
           // ========================================================
           StatefulShellBranch(
             routes: [
@@ -153,7 +201,7 @@ GoRouter createRouter(String initialRoute) {
           ),
 
           // ========================================================
-          // BRANCH 2 → CART
+          // BRANCH 2 — CART
           // ========================================================
           StatefulShellBranch(
             routes: [
@@ -167,7 +215,7 @@ GoRouter createRouter(String initialRoute) {
           ),
 
           // ========================================================
-          // BRANCH 3 → ORDERS
+          // BRANCH 3 — ORDERS
           // ========================================================
           StatefulShellBranch(
             routes: [
@@ -181,7 +229,7 @@ GoRouter createRouter(String initialRoute) {
           ),
 
           // ========================================================
-          // BRANCH 4 → PROFILE
+          // BRANCH 4 — PROFILE
           // ========================================================
           StatefulShellBranch(
             routes: [
@@ -196,7 +244,9 @@ GoRouter createRouter(String initialRoute) {
         ],
       ),
 
+      // ============================================================
       // CHECKOUT
+      // ============================================================
       GoRoute(
         path: '/checkout/address',
         builder: (context, state) {
@@ -252,6 +302,10 @@ GoRouter createRouter(String initialRoute) {
           );
         },
       ),
+
+      // ============================================================
+      // ORDER SUCCESS
+      // ============================================================
       GoRoute(
         path: '/order-success',
         builder: (context, state) {
