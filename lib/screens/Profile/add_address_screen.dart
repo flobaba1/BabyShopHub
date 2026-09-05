@@ -18,8 +18,6 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
   final _stateController = TextEditingController(text: 'IL');
   final _zipController = TextEditingController(text: '62701');
 
-  String _selectedCountry = 'United States';
-
   @override
   void dispose() {
     _line1Controller.dispose();
@@ -38,10 +36,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Color(0xFF1E1E24),
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1E1E24)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -78,23 +73,17 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 'Address Line 2 (Optional)',
                 _line2Controller,
               ),
-            ),
-            const SizedBox(height: 24),
-            _buildEditableAddressInput('Address Line 1', _line1Controller),
-            const SizedBox(height: 16),
-            _buildEditableAddressInput(
-              'Address Line 2 (Optional)',
-              _line2Controller,
-            ),
-            const SizedBox(height: 16),
-            _buildEditableAddressInput('City', _cityController),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildEditableAddressInput(
-                    'State',
-                    _stateController,
+              const SizedBox(height: 16),
+              _buildEditableAddressInput('City', _cityController),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildEditableAddressInput(
+                      'State',
+                      _stateController,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -106,15 +95,14 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey.withValues(alpha: 0.15),
+              const SizedBox(height: 16),
+
+              const Text(
+                'Country',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
                 ),
               ),
               const SizedBox(height: 8),
@@ -156,31 +144,33 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF6D00),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 40),
+
+              // Save Action bottom button layout
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6D00),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Save Address Changes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  child: const Text(
+                    'Save Address Changes',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -225,9 +215,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFFFF6D00),
-              ),
+              borderSide: const BorderSide(color: Color(0xFFFF6D00)),
             ),
           ),
           style: const TextStyle(
