@@ -71,10 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(height: 20),
                 const Text(
                   'Change Profile Picture',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
                 ListTile(
@@ -173,21 +170,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           imageBytes: imageBytes,
         );
       }
+      // Get the newest user information from MySQL.
+      final updatedUser = await _mysqlService.getUserById(userId);
 
       if (!mounted) return;
 
       EasyLoading.showSuccess('Profile updated successfully');
-      final updatedUser = await _mysqlService.getUserById(userId);
 
-      if (!mounted) return;
+      // 🛑 REPLACE YOUR OLD POP LINE WITH THIS ONE:
       Navigator.pop(context, updatedUser);
     } catch (e) {
       if (!mounted) return;
       EasyLoading.showError('Failed to update profile');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-        ),
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
     } finally {
       if (mounted) {
@@ -289,10 +285,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Colors.orange,
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: Colors.orange, width: 1.5),
             ),
           ),
         ),
@@ -332,10 +325,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         decoration: BoxDecoration(
                           color: Colors.orange,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 3,
-                          ),
+                          border: Border.all(color: Colors.white, width: 3),
                         ),
                         child: const Icon(
                           Icons.camera_alt_rounded,

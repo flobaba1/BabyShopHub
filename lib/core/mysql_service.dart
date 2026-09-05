@@ -108,9 +108,10 @@ class MySQLService {
 
     List<User> users = [];
     for (final row in results.rows) {
-      final Map<String, String?> rowMap = row.assoc();
-      users.add(User.fromRow(rowMap));
-    }
+  final Map<String, String?> rowMap = row.assoc(); // 👈 Change String? to dynamic
+  users.add(User.fromRow(rowMap));
+}
+
 
     return users;
   }
@@ -223,12 +224,14 @@ class MySQLService {
   }
 
   /// Fetch a user by their unique user ID.
+  /// Fetch a user by their unique user ID.
   Future<User> getUserById(String userId) async {
     final conn = await connection;
 
-    final result = await conn.execute("SELECT * FROM Users WHERE id = :id", {
-      "id": userId,
-    });
+    final result = await conn.execute(
+      "SELECT id, fullName, email, address, password, status, createdAt, isAdmin, image FROM Users WHERE id = :id",
+      {"id": userId},
+    );
 
     if (result.rows.isEmpty) {
       throw Exception("User not found.");

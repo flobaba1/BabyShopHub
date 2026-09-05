@@ -76,20 +76,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ============================================================
-  // OPEN PERSONAL INFORMATION
-  // ============================================================
-
   Future<void> _openPersonalInformation() async {
-    await Navigator.push(
+    final dynamic updatedUser = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const PersonalInformationScreen(),
       ),
     );
 
-    // Reload profile when returning.
-    await _loadUser();
+    if (updatedUser is User && mounted) {
+      setState(() {
+        _user = updatedUser;
+      });
+    } else {
+      await _loadUser();
+    }
   }
 
   // ============================================================

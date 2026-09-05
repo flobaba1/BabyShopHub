@@ -26,23 +26,58 @@ class User {
     this.image,
   });
 
-  factory User.fromRow(Map<String, String?> row, {Uint8List? imageBlob}) {
+  // FIXED: Changed row mapping parameter type to dynamic to safely read binary blobs alongside text strings
+  factory User.fromRow(Map<String, dynamic> row) {
+    Uint8List? parsedImage;
+
+    // FIXED: Directly check the row map for the "image" field coming back from MySQLService
+    final rawImage = row['image'];
+
+    if (rawImage is Uint8List) {
+      parsedImage = rawImage;
+    } else if (rawImage is List<int>) {
+      parsedImage = Uint8List.fromList(rawImage);
+    } else if (rawImage is String && rawImage.trim().isNotEmpty) {
+      // Fallback fallback filter mapping in case it gets stringified as textual elements
+      final String textImage = rawImage.trim();
+      if (textImage.startsWith('[') && textImage.endsWith(']')) {
+        try {
+          final cleaned = textImage.substring(1, textImage.length - 1);
+          final bytes = cleaned
+              .split(',')
+              .map((value) => int.parse(value.trim()))
+              .toList();
+          parsedImage = Uint8List.fromList(bytes);
+        } catch (_) {
+          parsedImage = null;
+        }
+      }
+    }
+
     return User(
-      id: row['id'] ?? '',
-      fullName: row['fullName'] ?? '',
-      email: row['email'] ?? '',
-      address: row['address'],
-      password: row['password'] ?? '',
-      status: row['status'] ?? 'Active',
+      id: row['id']?.toString() ?? '',
+      fullName:
+          row['fullName']?.toString() ?? row['full_name']?.toString() ?? '',
+      email: row['email']?.toString() ?? '',
+      address: row['address']?.toString(),
+      password: row['password']?.toString() ?? '',
+      status: row['status']?.toString() ?? 'Active',
       createdAt: row['createdAt'] != null
-          ? DateTime.parse(row['createdAt']!)
+          ? DateTime.tryParse(row['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      isAdmin: row['isAdmin'] == '1' || row['isAdmin'] == 'true',
+      isAdmin:
+          row['isAdmin'] == '1' ||
+          row['isAdmin'] == 1 ||
+          row['isAdmin'] == 'true' ||
+          row['isAdmin'] == true,
 
-      // Read the 2FA setting from MySQL
-      use2FA: row['use2FA'] == '1' || row['use2FA'] == 'true',
+      use2FA:
+          row['use2FA'] == '1' ||
+          row['use2FA'] == 1 ||
+          row['use2FA'] == 'true' ||
+          row['use2FA'] == true,
 
-      image: imageBlob,
+      image: parsedImage,
     );
   }
 }
