@@ -1,33 +1,11 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+
 import 'add_product_view.dart';
+import 'package:baby_shop_hub/utilities/models/product.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
 
-// -----------------------------------------------------------------------------
-// 1. PRODUCT MODEL (Supports both Asset/URL paths & Raw Byte arrays)
-// -----------------------------------------------------------------------------
-class AdminProduct {
-  final String title;
-  final String brand;
-  final String price;
-  final String stock;
-  final String status;
-  final String? imageUrl;
-  final Uint8List? imageBytes; // Raw byte array ready for MySQL BLOB storage
-
-  const AdminProduct({
-    required this.title,
-    required this.brand,
-    required this.price,
-    required this.stock,
-    required this.status,
-    this.imageUrl,
-    this.imageBytes,
-  });
-}
-
-// -----------------------------------------------------------------------------
-// 2. ADMIN PRODUCTS VIEW (Main Screen with Product List)
-// -----------------------------------------------------------------------------
 class AdminProductsView extends StatefulWidget {
   const AdminProductsView({super.key});
 
@@ -36,64 +14,150 @@ class AdminProductsView extends StatefulWidget {
 }
 
 class _AdminProductsViewState extends State<AdminProductsView> {
+  final MySQLService _dbService = MySQLService();
+
   int _currentPage = 1;
-  final int _totalPages = 5;
+  final int _pageSize = 20;
 
-  // Mutable list to allow dynamic product additions and edits
-  final List<AdminProduct> _products = [
-    const AdminProduct(
-      title: 'Huggies Little Snugglers Diapers',
-      brand: 'Huggies',
-      price: '\$24.99',
-      stock: 'Stock: 142',
-      status: 'In Stock',
-      imageUrl: 'assets/pampers.png',
-    ),
-    const AdminProduct(
-      title: 'Pampers Swaddlers Sensitive',
-      brand: 'Pampers',
-      price: '\$28.99',
-      stock: 'Stock: 89',
-      status: 'In Stock',
-      imageUrl: 'assets/image_Sweater.png',
-    ),
-    const AdminProduct(
-      title: 'Gerber Organic 1st Foods Baby Food',
-      brand: 'Gerber',
-      price: '\$8.99',
-      stock: 'Stock: 230',
-      status: 'In Stock',
-      imageUrl: 'https://via.placeholder.com/80',
-    ),
-  ];
+  List<Product> _products = [];
+  bool _isLoading = true;
+  String? _error;
 
-  // Method to open AddProductScreen and await the returned product object
-  Future<void> _navigateAndAddProduct() async {
-    final result = await Navigator.push<AdminProduct>(
-      context,
-      MaterialPageRoute(builder: (context) => const AddProductScreen()),
-    );
+  final Map<String, Future<Uint8List?>> _imageCache = {};
 
-    if (result != null) {
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<Uint8List?> _getProductImage(String productId) {
+    // If this product image has already been requested,
+    // return the existing Future.
+    if (_imageCache.containsKey(productId)) {
+      return _imageCache[productId]!;
+    }
+
+    // Create the request only once.
+    final future = _dbService.getProductImage(productId);
+
+    // Save the Future immediately.
+    _imageCache[productId] = future;
+
+    // If the request fails, remove it from the cache so that
+    // a future attempt can try again.
+    future.catchError((error) {
+      _imageCache.remove(productId);
+      return null;
+    });
+
+    return future;
+  }
+
+  // ------------------------------------------------------------
+  // LOAD PRODUCTS
+  // ------------------------------------------------------------
+  Future<void> _loadProducts() async {
+    if (mounted) {
       setState(() {
-        _products.insert(0, result); // Inserts new product at the top
+        _isLoading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final offset = (_currentPage - 1) * _pageSize;
+
+      final products = await _dbService.fetchProductsPaginated(
+        offset: offset,
+        limit: _pageSize,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _products = products;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
       });
     }
   }
 
-  // Method to edit an existing product in the list
-  Future<void> _navigateAndEditProduct(int index) async {
-    final updatedProduct = await Navigator.push<AdminProduct>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddProductScreen(productToEdit: _products[index]),
+  // ------------------------------------------------------------
+  // DELETE PRODUCT
+  // ------------------------------------------------------------
+  Future<void> _deleteProduct(String productId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: const Text('Are you sure you want to delete this product?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
 
-    if (updatedProduct != null) {
-      setState(() {
-        _products[index] = updatedProduct; // Replaces item at index
-      });
+    if (confirm == true) {
+      final success = await _dbService.deleteProduct(productId);
+
+      if (success && mounted) {
+        // Remove the deleted product's image from cache.
+        _imageCache.remove(productId);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product deleted successfully')),
+        );
+
+        await _loadProducts();
+      }
+    }
+  }
+
+  // ------------------------------------------------------------
+  // ADD PRODUCT
+  // ------------------------------------------------------------
+  Future<void> _navigateAndAddProduct() async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const AddProductScreen()),
+    );
+
+    if (updated == true && mounted) {
+      await _loadProducts();
+    }
+  }
+
+  // ------------------------------------------------------------
+  // EDIT PRODUCT
+  // ------------------------------------------------------------
+  Future<void> _navigateAndEditProduct(Product product) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddProductScreen(productToEdit: product),
+      ),
+    );
+
+    if (updated == true && mounted) {
+      _imageCache.remove(product.id);
+
+      await _loadProducts();
     }
   }
 
@@ -103,6 +167,9 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         children: [
+          // ------------------------------------------------------
+          // HEADER
+          // ------------------------------------------------------
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -139,25 +206,94 @@ class _AdminProductsViewState extends State<AdminProductsView> {
               ),
             ],
           ),
+
           const SizedBox(height: 16),
 
-          // Product Items List
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _products.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              return ProductItemCard(
-                product: _products[index],
-                onEdit: () => _navigateAndEditProduct(index),
-              );
-            },
-          ),
+          // ------------------------------------------------------
+          // LOADING
+          // ------------------------------------------------------
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: CircularProgressIndicator(color: Color(0xFFFF5722)),
+              ),
+            )
+          // ------------------------------------------------------
+          // ERROR
+          // ------------------------------------------------------
+          else if (_error != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Error loading products:\n$_error',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _loadProducts,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF5722),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          // ------------------------------------------------------
+          // EMPTY
+          // ------------------------------------------------------
+          else if (_products.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No products found'),
+              ),
+            )
+          // ------------------------------------------------------
+          // PRODUCTS
+          // ------------------------------------------------------
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _products.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final product = _products[index];
+
+                return ProductItemCard(
+                  key: ValueKey(product.id),
+                  product: product,
+
+                  // IMPORTANT:
+                  // The card receives the cached Future.
+                  //
+                  // It does NOT create a new MySQLService.
+                  imageFuture: _getProductImage(product.id),
+
+                  onEdit: () => _navigateAndEditProduct(product),
+                  onDelete: () => _deleteProduct(product.id),
+                );
+              },
+            ),
 
           const SizedBox(height: 20),
 
-          // Pagination Controls
+          // ------------------------------------------------------
+          // PAGINATION
+          // ------------------------------------------------------
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -167,15 +303,18 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                         setState(() {
                           _currentPage--;
                         });
+
+                        _loadProducts();
                       }
                     : null,
                 icon: const Icon(Icons.chevron_left_rounded, size: 20),
                 label: const Text('Previous'),
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFFFF5722),
-                  disabledForegroundColor: Colors.grey.shade400,
+                  disabledForegroundColor: Colors.grey,
                 ),
               ),
+
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -186,7 +325,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Page $_currentPage of $_totalPages',
+                  'Page $_currentPage',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -194,23 +333,27 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                   ),
                 ),
               ),
+
               TextButton.icon(
-                onPressed: _currentPage < _totalPages
-                    ? () {
+                onPressed: _products.length < _pageSize
+                    ? null
+                    : () {
                         setState(() {
                           _currentPage++;
                         });
-                      }
-                    : null,
+
+                        _loadProducts();
+                      },
                 icon: const Text('Next'),
                 label: const Icon(Icons.chevron_right_rounded, size: 20),
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFFFF5722),
-                  disabledForegroundColor: Colors.grey.shade400,
+                  disabledForegroundColor: Colors.grey,
                 ),
               ),
             ],
           ),
+
           const SizedBox(height: 24),
         ],
       ),
@@ -218,44 +361,49 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 3. PRODUCT ITEM CARD (Renders Image from Bytes or Path)
-// -----------------------------------------------------------------------------
-class ProductItemCard extends StatelessWidget {
-  final AdminProduct product;
+// ============================================================================
+// PRODUCT ITEM CARD
+// ============================================================================
+
+class ProductItemCard extends StatefulWidget {
+  final Product product;
+
+  final Future<Uint8List?> imageFuture;
+
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const ProductItemCard({
     super.key,
     required this.product,
+    required this.imageFuture,
     required this.onEdit,
+    required this.onDelete,
   });
 
-  Widget _buildProductImage() {
-    // 1. Check if raw image bytes are present
-    if (product.imageBytes != null) {
-      return Image.memory(product.imageBytes!, fit: BoxFit.cover);
-    }
+  @override
+  State<ProductItemCard> createState() => _ProductItemCardState();
+}
 
-    // 2. Fallback to Asset image path if available
-    if (product.imageUrl != null && product.imageUrl!.startsWith('assets/')) {
-      return Image.asset(
-        product.imageUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildPlaceholderIcon(),
-      );
-    }
+class _ProductItemCardState extends State<ProductItemCard> {
+  late Future<Uint8List?> _imageFuture;
 
-    // 3. Fallback placeholder icon
-    return _buildPlaceholderIcon();
+  @override
+  void initState() {
+    super.initState();
+
+    // Save the Future once when this card is created.
+    _imageFuture = widget.imageFuture;
   }
 
-  Widget _buildPlaceholderIcon() {
-    return const Icon(
-      Icons.inventory_2_outlined,
-      color: Color(0xFF9CA3AF),
-      size: 28,
-    );
+  @override
+  void didUpdateWidget(covariant ProductItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // If the image Future changes, update it.
+    if (oldWidget.imageFuture != widget.imageFuture) {
+      _imageFuture = widget.imageFuture;
+    }
   }
 
   @override
@@ -268,23 +416,86 @@ class ProductItemCard extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // ------------------------------------------------------
+          // PRODUCT IMAGE
+          // ------------------------------------------------------
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Container(
               width: 60,
               height: 60,
               color: const Color(0xFFF3F4F6),
-              child: _buildProductImage(),
+              child: FutureBuilder<Uint8List?>(
+                future: _imageFuture,
+                builder: (context, snapshot) {
+                  // IMAGE LOADING
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFFFF5722),
+                        ),
+                      ),
+                    );
+                  }
+
+                  // IMAGE ERROR
+                  if (snapshot.hasError) {
+                    return const Icon(
+                      Icons.broken_image_outlined,
+                      color: Color(0xFF9CA3AF),
+                      size: 28,
+                    );
+                  }
+
+                  final imageBytes = snapshot.data;
+
+                  // NO IMAGE
+                  if (imageBytes == null || imageBytes.isEmpty) {
+                    return const Icon(
+                      Icons.inventory_2_outlined,
+                      color: Color(0xFF9CA3AF),
+                      size: 28,
+                    );
+                  }
+
+                  // IMAGE
+                  return Image.memory(
+                    imageBytes,
+                    fit: BoxFit.cover,
+                    width: 60,
+                    height: 60,
+
+                    cacheWidth: 120,
+                    cacheHeight: 120,
+
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.broken_image_outlined,
+                        color: Color(0xFF9CA3AF),
+                        size: 28,
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
+
           const SizedBox(width: 12),
 
+          // ------------------------------------------------------
+          // PRODUCT INFORMATION
+          // ------------------------------------------------------
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.title,
+                  widget.product.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -293,51 +504,38 @@ class ProductItemCard extends StatelessWidget {
                     color: Color(0xFF111827),
                   ),
                 ),
+
                 const SizedBox(height: 2),
+
                 Text(
-                  product.brand,
+                  widget.product.brand ?? 'Unbranded',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFFFF5722),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+
                 const SizedBox(height: 6),
+
                 Row(
                   children: [
                     Text(
-                      product.price,
+                      '\$${widget.product.price.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         color: Color(0xFF111827),
                       ),
                     ),
+
                     const SizedBox(width: 8),
+
                     Text(
-                      product.stock,
+                      'Stock: ${widget.product.quantity}',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF9CA3AF),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        product.status,
-                        style: const TextStyle(
-                          color: Color(0xFF16A34A),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
                     ),
                   ],
@@ -346,10 +544,14 @@ class ProductItemCard extends StatelessWidget {
             ),
           ),
 
+          // ------------------------------------------------------
+          // ACTION BUTTONS
+          // ------------------------------------------------------
           Column(
             children: [
+              // EDIT
               InkWell(
-                onTap: onEdit,
+                onTap: widget.onEdit,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.all(6),
@@ -364,9 +566,12 @@ class ProductItemCard extends StatelessWidget {
                   ),
                 ),
               ),
+
               const SizedBox(height: 6),
+
+              // DELETE
               InkWell(
-                onTap: () {},
+                onTap: widget.onDelete,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.all(6),

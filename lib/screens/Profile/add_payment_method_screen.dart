@@ -93,7 +93,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
                 ),
                 child: Row(
                   children: const [
@@ -127,8 +127,8 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
                   Switch(
                     value: _isDefault,
                     onChanged: (val) => setState(() => _isDefault = val),
-                    activeColor: const Color(0xFFFF6D00),
-                    activeTrackColor: const Color(0xFFFF6D00).withOpacity(0.2),
+                    activeThumbColor: const Color(0xFFFF6D00),
+                    activeTrackColor: const Color(0xFFFF6D00).withValues(alpha: 0.2),
                   ),
                 ],
               ),
@@ -173,7 +173,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
         border: Border.all(
           color: isSelected
               ? Colors.transparent
-              : Colors.grey.withOpacity(0.15),
+              : Colors.grey.withValues(alpha: 0.15),
         ),
       ),
       child: Center(
@@ -236,7 +236,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.15)),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

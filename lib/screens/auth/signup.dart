@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:go_router/go_router.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -9,6 +12,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final MySQLService mysqlService = MySQLService();
 
   // Text Controllers
   final TextEditingController _fullNameController = TextEditingController();
@@ -32,12 +36,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!_agreeToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please accept the Terms of Service and Privacy Policy'),
+            content: Text(
+              'Please accept the Terms of Service and Privacy Policy',
+            ),
             backgroundColor: Colors.redAccent,
           ),
         );
         return;
       }
+
+      // Show loading indicator
+      EasyLoading.show(status: 'Creating account...');
+
+      mysqlService
+          .createUser(
+            fullName: _fullNameController.text.trim(),
+            email: _emailController.text.trim(),
+            plainPassword: _passwordController.text,
+          )
+          .then((bool isSuccess) {
+            EasyLoading.dismiss();
+
+            if (isSuccess) {
+              EasyLoading.showSuccess('User registered successfully!');
+              // Navigate to login or main dashboard
+              context.go('/login');
+            } else {
+              EasyLoading.showError(
+                'Failed to create account. Please try again.',
+              );
+            }
+          })
+          .catchError((error) {
+            EasyLoading.dismiss();
+
+            // Handle database errors, duplicate emails, network failures, etc.
+            final String errorMessage = error.toString().replaceAll(
+              'Exception: ',
+              '',
+            );
+            EasyLoading.showError('Error: $errorMessage');
+          });
     }
   }
 
@@ -86,10 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Subtitle
                 const Text(
                   'Join thousands of happy parents on BabyShopHub',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 32),
 
@@ -126,7 +162,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email address';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Please enter a valid email address';
                     }
                     return null;
@@ -246,7 +284,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF5722).withOpacity(0.35),
+                        color: const Color(0xFFFF5722).withValues(alpha: 0.35),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -279,10 +317,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     const Text(
                       'Already have an account? ',
-                      style: TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 15,
-                      ),
+                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 15),
                     ),
                     GestureDetector(
                       onTap: () {},

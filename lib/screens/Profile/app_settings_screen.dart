@@ -61,11 +61,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                 ),
                 child: Column(
                   children: [
-                    _buildSelectionRow('Language', 'English >'),
+                    _buildSelectionRow('Language', 'English '),
                     _buildDivider(),
-                    _buildSelectionRow('Currency', 'USD (\$) >'),
+                    _buildSelectionRow('Currency', 'USD (\$) '),
                     _buildDivider(),
-                    _buildSelectionRow('Theme', 'System >'),
+                    _buildSelectionRow('Theme', 'System '),
                   ],
                 ),
               ),
@@ -169,12 +169,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFFFF6D00),
-        activeTrackColor: const Color(0xFFFF6D00).withOpacity(0.2),
+        activeThumbColor: const Color(0xFFFF6D00),
+        activeTrackColor: const Color(0xFFFF6D00).withValues(alpha: 0.2),
       ),
     );
   }
 
   Widget _buildDivider() =>
-      Divider(height: 1, indent: 16, color: Colors.grey.withOpacity(0.15));
+      Divider(height: 1, indent: 16, color: Colors.grey.withValues(alpha: 0.15));
 }

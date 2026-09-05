@@ -5,21 +5,24 @@ class User {
   final String fullName;
   final String email;
   final String? address;
-  final String password;
+  final String? password;
   final String status;
-  final DateTime createdAt;
+  final DateTime? createdAt;
   final bool isAdmin;
-  final Uint8List? image; // BLOB Data
+  final bool use2FA;
+  final Uint8List? image;
+  final metadata = <String, dynamic>{}; // For any additional metadata
 
   User({
     required this.id,
     required this.fullName,
     required this.email,
     this.address,
-    required this.password,
+    this.password,
     this.status = 'Active',
-    required this.createdAt,
+    this.createdAt,
     this.isAdmin = false,
+    this.use2FA = false,
     this.image,
   });
 
@@ -35,6 +38,10 @@ class User {
           ? DateTime.parse(row['createdAt']!)
           : DateTime.now(),
       isAdmin: row['isAdmin'] == '1' || row['isAdmin'] == 'true',
+
+      // Read the 2FA setting from MySQL
+      use2FA: row['use2FA'] == '1' || row['use2FA'] == 'true',
+
       image: imageBlob,
     );
   }

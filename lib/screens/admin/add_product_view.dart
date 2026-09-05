@@ -1,10 +1,12 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'admin_product_view.dart';
+import 'package:baby_shop_hub/utilities/models/product.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:baby_shop_hub/utilities/models/category.dart';
 
 class AddProductScreen extends StatefulWidget {
-  final AdminProduct? productToEdit; // Null if adding new, populated if editing
+  final Product? productToEdit;
 
   const AddProductScreen({super.key, this.productToEdit});
 
@@ -14,6 +16,7 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
+  final MySQLService _dbService = MySQLService();
 
   late TextEditingController _titleController;
   late TextEditingController _brandController;
@@ -22,38 +25,81 @@ class _AddProductScreenState extends State<AddProductScreen> {
   late TextEditingController _descriptionController;
 
   Uint8List? _selectedImageBytes;
+  bool _isSaving = false;
+  bool _isLoadingCategories = true;
   final ImagePicker _picker = ImagePicker();
 
-  String _selectedCategory = 'Diapers & Wipes';
-  final List<String> _categories = [
-    'Diapers & Wipes',
-    'Baby Food & Formula',
-    'Clothing',
-    'Toys & Gear',
-    'Bath & Skincare',
+  String? _selectedCategoryId;
+  String? _selectedBadge;
+  List<Category> _categories = [];
+
+  final List<String> _badgeOptions = [
+    'Organic',
+    'Sale',
+    'New',
+    'Top Rated',
+    'Best Seller',
+    'Featured',
   ];
 
   @override
   void initState() {
     super.initState();
-    
-    // Pre-fill controllers if editing an existing product
-    final product = widget.productToEdit;
-    _titleController = TextEditingController(text: product?.title ?? '');
-    _brandController = TextEditingController(text: product?.brand ?? '');
-    
-    // Clean price string (e.g., "$24.99" -> "24.99")
+    final p = widget.productToEdit;
+    _titleController = TextEditingController(text: p?.name ?? '');
+    _brandController = TextEditingController(text: p?.brand ?? '');
     _priceController = TextEditingController(
-      text: product?.price.replaceAll('\$', '') ?? '',
+      text: p != null ? p.price.toString() : '',
     );
-    
-    // Clean stock string (e.g., "Stock: 142" -> "142")
     _stockController = TextEditingController(
-      text: product?.stock.replaceAll('Stock: ', '') ?? '',
+      text: p != null ? p.quantity.toString() : '',
     );
-    
-    _descriptionController = TextEditingController();
-    _selectedImageBytes = product?.imageBytes;
+    _descriptionController = TextEditingController(text: p?.description ?? '');
+
+    _selectedCategoryId = p?.categoryId;
+    _selectedBadge = p?.badge;
+
+    _loadCategoriesAndImage();
+  }
+
+  Future<void> _loadCategoriesAndImage() async {
+    try {
+      final fetchedCategories = await _dbService.fetchCategories();
+
+      if (mounted) {
+        setState(() {
+          _categories = fetchedCategories;
+          _isLoadingCategories = false;
+
+          if (_selectedCategoryId == null && _categories.isNotEmpty) {
+            _selectedCategoryId = _categories.first.id;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingCategories = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load categories: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    if (widget.productToEdit?.id != null) {
+      _loadExistingImage(widget.productToEdit!.id);
+    }
+  }
+
+  Future<void> _loadExistingImage(String productId) async {
+    final bytes = await _dbService.getProductImage(productId);
+    if (mounted && bytes != null) {
+      setState(() {
+        _selectedImageBytes = bytes;
+      });
+    }
   }
 
   @override
@@ -74,38 +120,88 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      setState(() {
-        _selectedImageBytes = bytes;
-      });
+      if (mounted) {
+        setState(() {
+          _selectedImageBytes = bytes;
+        });
+      }
     }
   }
 
-  void _saveProduct() {
-    if (_formKey.currentState!.validate()) {
-      final updatedProduct = AdminProduct(
-        title: _titleController.text,
-        brand: _brandController.text,
-        price: '\$${_priceController.text}',
-        stock: 'Stock: ${_stockController.text}',
-        status: 'In Stock',
-        imageUrl: widget.productToEdit?.imageUrl, // Keep asset image if untouched
-        imageBytes: _selectedImageBytes,
-      );
-
-      final isEditing = widget.productToEdit != null;
-
+  Future<void> _saveProduct() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isEditing
-                ? 'Product updated successfully!'
-                : 'Product added successfully!',
-          ),
-          backgroundColor: const Color(0xFF16A34A),
-        ),
+        const SnackBar(content: Text('Please select a valid category.')),
       );
+      return;
+    }
 
-      Navigator.pop(context, updatedProduct);
+    setState(() => _isSaving = true);
+
+    try {
+      final isEditing = widget.productToEdit != null;
+      bool success;
+
+      if (isEditing) {
+        success = await _dbService.updateProduct(
+          id: widget.productToEdit!.id,
+          name: _titleController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          price: double.parse(_priceController.text.trim()),
+          quantity: int.parse(_stockController.text.trim()),
+          brand: _brandController.text.trim().isNotEmpty
+              ? _brandController.text.trim()
+              : null,
+          badge: _selectedBadge,
+          description: _descriptionController.text.trim().isNotEmpty
+              ? _descriptionController.text.trim()
+              : null,
+          imageBytes: _selectedImageBytes,
+        );
+      } else {
+        success = await _dbService.createProduct(
+          name: _titleController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          price: double.parse(_priceController.text.trim()),
+          quantity: int.parse(_stockController.text.trim()),
+          brand: _brandController.text.trim().isNotEmpty
+              ? _brandController.text.trim()
+              : null,
+          badge: _selectedBadge,
+          description: _descriptionController.text.trim().isNotEmpty
+              ? _descriptionController.text.trim()
+              : null,
+          imageBytes: _selectedImageBytes,
+        );
+      }
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEditing ? 'Product updated!' : 'Product created!'),
+            backgroundColor: const Color(0xFF16A34A),
+          ),
+        );
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save product to database.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -160,19 +256,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               fit: BoxFit.cover,
                             ),
                           )
-                        : widget.productToEdit?.imageUrl != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.asset(
-                                  widget.productToEdit!.imageUrl!,
-                                  width: double.infinity,
-                                  height: 140,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      _buildPlaceholder(),
-                                ),
-                              )
-                            : _buildPlaceholder(),
+                        : _buildPlaceholder(),
                   ),
                 ),
               ),
@@ -180,30 +264,85 @@ class _AddProductScreenState extends State<AddProductScreen> {
               _buildLabel('Product Title'),
               TextFormField(
                 controller: _titleController,
-                decoration: _buildInputDecoration('e.g., Huggies Little Snugglers'),
+                decoration: _buildInputDecoration(
+                  'e.g., Huggies Little Snugglers',
+                ),
                 validator: (val) =>
                     val == null || val.isEmpty ? 'Please enter a title' : null,
               ),
               const SizedBox(height: 14),
-              _buildLabel('Brand'),
-              TextFormField(
-                controller: _brandController,
-                decoration: _buildInputDecoration('e.g., Huggies'),
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Please enter a brand' : null,
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('Brand'),
+                        TextFormField(
+                          controller: _brandController,
+                          decoration: _buildInputDecoration('e.g., Huggies'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('Product Badge'),
+                        DropdownButtonFormField<String>(
+                          value: _selectedBadge,
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('None'),
+                            ),
+                            ..._badgeOptions.map((badge) {
+                              return DropdownMenuItem<String>(
+                                value: badge,
+                                child: Text(badge),
+                              );
+                            }),
+                          ],
+                          onChanged: (val) {
+                            setState(() => _selectedBadge = val);
+                          },
+                          decoration: _buildInputDecoration('Select Badge'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
               _buildLabel('Category'),
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                items: _categories.map((cat) {
-                  return DropdownMenuItem(value: cat, child: Text(cat));
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedCategory = val);
-                },
-                decoration: _buildInputDecoration('Select Category'),
-              ),
+              _isLoadingCategories
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : DropdownButtonFormField<String>(
+                      value: _categories.any((c) => c.id == _selectedCategoryId)
+                          ? _selectedCategoryId
+                          : null,
+                      items: _categories.map((cat) {
+                        return DropdownMenuItem<String>(
+                          value: cat.id,
+                          child: Text(cat.name),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _selectedCategoryId = val);
+                        }
+                      },
+                      decoration: _buildInputDecoration('Select Category'),
+                      validator: (val) =>
+                          val == null ? 'Please select a category' : null,
+                    ),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -247,14 +386,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
-                decoration:
-                    _buildInputDecoration('Enter product details and features...'),
+                decoration: _buildInputDecoration('Enter product details...'),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saveProduct,
+                  onPressed: _isSaving ? null : _saveProduct,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5722),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -263,14 +401,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    isEditing ? 'Update Product' : 'Save Product',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          isEditing ? 'Update Product' : 'Save Product',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -281,14 +428,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Widget _buildPlaceholder() {
-    return Column(
+    return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Icon(
-          Icons.add_a_photo_outlined,
-          size: 36,
-          color: Color(0xFFFF5722),
-        ),
+      children: [
+        Icon(Icons.add_a_photo_outlined, size: 36, color: Color(0xFFFF5722)),
         SizedBox(height: 8),
         Text(
           'Upload Product Image',
@@ -322,8 +465,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
       filled: true,
       fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFFE5E7EB)),

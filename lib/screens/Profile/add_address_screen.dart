@@ -8,23 +8,22 @@ class AddAddressScreen extends StatefulWidget {
 }
 
 class _AddAddressScreenState extends State<AddAddressScreen> {
-  final _labelController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _line1Controller = TextEditingController();
-  final _line2Controller = TextEditingController();
-  final _cityController = TextEditingController();
-  final _zipController = TextEditingController();
+  // FIXED: Added the missing state variable for the dropdown selection
   String _selectedCountry = 'United States';
+
+  // Pre-populated text controllers representing your active primary address lines
+  final _line1Controller = TextEditingController(text: '123 Maple Street');
+  final _line2Controller = TextEditingController(text: 'Apt 4B');
+  final _cityController = TextEditingController(text: 'Springfield');
+  final _stateController = TextEditingController(text: 'IL');
+  final _zipController = TextEditingController(text: '62701');
 
   @override
   void dispose() {
-    _labelController.dispose();
-    _nameController.dispose();
-    _phoneController.dispose();
     _line1Controller.dispose();
     _line2Controller.dispose();
     _cityController.dispose();
+    _stateController.dispose();
     _zipController.dispose();
     super.dispose();
   }
@@ -41,7 +40,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Add / Edit Address',
+          'Edit Delivery Address',
           style: TextStyle(
             color: Color(0xFF1E1E24),
             fontWeight: FontWeight.bold,
@@ -57,33 +56,43 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildFormInput(
-                'Address Label (e.g. Home, Work)',
-                _labelController,
-                placeholder: 'Home, Work, etc.',
+              const Text(
+                'Modify Shipping Destination',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Only the pure physical address properties are exposed as text entry forms
+              _buildEditableAddressInput('Address Line 1', _line1Controller),
+              const SizedBox(height: 16),
+              _buildEditableAddressInput(
+                'Address Line 2 (Optional)',
+                _line2Controller,
               ),
               const SizedBox(height: 16),
-              _buildFormInput('Full Name', _nameController),
-              const SizedBox(height: 16),
-              _buildFormInput('Phone Number', _phoneController),
-              const SizedBox(height: 16),
-              _buildFormInput('Address Line 1', _line1Controller),
-              const SizedBox(height: 16),
-              _buildFormInput('Address Line 2 (Optional)', _line2Controller),
-              const SizedBox(height: 16),
-              _buildFormInput('City', _cityController),
+              _buildEditableAddressInput('City', _cityController),
               const SizedBox(height: 16),
 
               Row(
                 children: [
                   Expanded(
-                    child: _buildFormInput(
+                    child: _buildEditableAddressInput(
                       'State',
-                      TextEditingController(text: 'IL'),
+                      _stateController,
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildFormInput('ZIP Code', _zipController)),
+                  Expanded(
+                    // FIXED: Changed _buildFormInput to the correct name _buildEditableAddressInput
+                    child: _buildEditableAddressInput(
+                      'ZIP Code',
+                      _zipController,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -102,8 +111,11 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.15),
+                  ),
                 ),
+                // FIXED: Repaired the broken layout blocks and closed the dropdown hierarchy cleanly
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedCountry,
@@ -132,7 +144,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 40),
 
               // Save Action bottom button layout
               SizedBox(
@@ -141,14 +153,14 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: const Color(0xFFFF6D00),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 0,
                   ),
                   child: const Text(
-                    'Save Address',
+                    'Save Address Changes',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -164,18 +176,17 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     );
   }
 
-  Widget _buildFormInput(
+  Widget _buildEditableAddressInput(
     String label,
-    TextEditingController controller, {
-    String? placeholder,
-  }) {
+    TextEditingController controller,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Colors.grey,
           ),
@@ -184,9 +195,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         TextField(
           controller: controller,
           decoration: InputDecoration(
-            hintText: placeholder,
+            // FIXED: Replaced undefined variable placeholder with label
+            hintText: label,
             hintStyle: TextStyle(
-              color: Colors.grey.withOpacity(0.6),
+              color: Colors.grey.withValues(alpha: 0.6),
               fontSize: 14,
             ),
             filled: true,
@@ -197,16 +209,18 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.15)),
+              borderSide: BorderSide(
+                color: Colors.grey.withValues(alpha: 0.15),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.orange),
+              borderSide: const BorderSide(color: Color(0xFFFF6D00)),
             ),
           ),
           style: const TextStyle(
             fontSize: 15,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: Color(0xFF1E1E24),
           ),
         ),
