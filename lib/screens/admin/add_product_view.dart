@@ -30,10 +30,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final ImagePicker _picker = ImagePicker();
 
   String? _selectedCategoryId;
-  String? _selectedBadge; // Tracks selected badge
+  String? _selectedBadge;
   List<Category> _categories = [];
 
-  // Options matching _getBadgeColor in Product model
   final List<String> _badgeOptions = [
     'Organic',
     'Sale',
@@ -58,7 +57,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _descriptionController = TextEditingController(text: p?.description ?? '');
 
     _selectedCategoryId = p?.categoryId;
-    _selectedBadge = p?.badge; // Initialize badge if editing
+    _selectedBadge = p?.badge;
 
     _loadCategoriesAndImage();
   }
@@ -121,9 +120,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      setState(() {
-        _selectedImageBytes = bytes;
-      });
+      if (mounted) {
+        setState(() {
+          _selectedImageBytes = bytes;
+        });
+      }
     }
   }
 
@@ -152,7 +153,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           brand: _brandController.text.trim().isNotEmpty
               ? _brandController.text.trim()
               : null,
-          badge: _selectedBadge, // Pass selected badge
+          badge: _selectedBadge,
           description: _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
               : null,
@@ -167,7 +168,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           brand: _brandController.text.trim().isNotEmpty
               ? _brandController.text.trim()
               : null,
-          badge: _selectedBadge, // Pass selected badge
+          badge: _selectedBadge,
           description: _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
               : null,
@@ -194,9 +195,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -314,16 +317,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               const SizedBox(height: 14),
               _buildLabel('Category'),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                items: _categories.map((cat) {
-                  return DropdownMenuItem(value: cat, child: Text(cat));
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedCategory = val);
-                },
-                decoration: _buildInputDecoration('Select Category'),
-              ),
               _isLoadingCategories
                   ? const Center(
                       child: Padding(

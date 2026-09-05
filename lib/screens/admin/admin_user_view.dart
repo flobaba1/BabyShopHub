@@ -177,7 +177,9 @@ class _AdminUsersViewState extends State<AdminUsersView> {
         ? user.fullName.trim()[0].toUpperCase()
         : '?';
 
-    final String formattedDate = DateFormat('MMM yyyy').format(user.createdAt);
+    final String formattedDate = user.createdAt != null
+        ? DateFormat('MMM yyyy').format(user.createdAt!)
+        : 'Unknown';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
@@ -197,7 +199,6 @@ class _AdminUsersViewState extends State<AdminUsersView> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Letter Initial Avatar
           Container(
             width: 42,
             height: 42,
@@ -219,7 +220,6 @@ class _AdminUsersViewState extends State<AdminUsersView> {
           ),
           const SizedBox(width: 12),
 
-          // User Meta Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +253,6 @@ class _AdminUsersViewState extends State<AdminUsersView> {
             ),
           ),
 
-          // Status Badge and Action Edit Toggle Icon
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
