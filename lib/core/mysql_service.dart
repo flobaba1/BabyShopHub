@@ -51,6 +51,24 @@ class MySQLService {
   // ===========================================================================
   // AUTHENTICATION & USERS
 
+  Future<bool> updateUserProfile({
+    required String userId,
+    required String fullName,
+    required String email,
+    required String? address,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      "UPDATE Users SET fullName = :fullName, email = :email, address = :address WHERE id = :id",
+      {"fullName": fullName, "email": email, "address": address, "id": userId},
+    );
+
+    return result.affectedRows.toInt() > 0;
+  }
+
+  // ... rest of your code stays exactly the same
+
   Future<bool> createUser({
     required String fullName,
     required String email,
@@ -202,6 +220,21 @@ class MySQLService {
     );
 
     return result.affectedRows.toInt() > 0;
+  }
+
+  /// Fetch a user by their unique user ID.
+  Future<User> getUserById(String userId) async {
+    final conn = await connection;
+
+    final result = await conn.execute("SELECT * FROM Users WHERE id = :id", {
+      "id": userId,
+    });
+
+    if (result.rows.isEmpty) {
+      throw Exception("User not found.");
+    }
+
+    return User.fromRow(result.rows.first.assoc());
   }
 
   Future<User?> validateUserEmail(String userEmail) async {

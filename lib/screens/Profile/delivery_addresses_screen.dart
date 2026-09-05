@@ -1,47 +1,24 @@
 import 'package:flutter/material.dart';
+import 'add_address_screen.dart'; // Links straight to your edit form
 
-class AddAddressScreen extends StatefulWidget {
-  const AddAddressScreen({super.key});
-
-  @override
-  State<AddAddressScreen> createState() => _AddAddressScreenState();
-}
-
-class _AddAddressScreenState extends State<AddAddressScreen> {
-  final _line1Controller = TextEditingController(text: '123 Maple Street');
-  final _line2Controller = TextEditingController(text: 'Apt 4B');
-  final _cityController = TextEditingController(text: 'Springfield');
-  final _stateController = TextEditingController(text: 'IL');
-  final _zipController = TextEditingController(text: '62701');
-
-  String _selectedCountry = 'United States';
-
-  @override
-  void dispose() {
-    _line1Controller.dispose();
-    _line2Controller.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
-    _zipController.dispose();
-    super.dispose();
-  }
+class DeliveryAddressesScreen extends StatelessWidget {
+  const DeliveryAddressesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F4),
+      backgroundColor: const Color(
+        0xFFFFF8F4,
+      ), // Cohesive warm background setup
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Color(0xFF1E1E24),
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1E1E24)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Edit Delivery Address',
+          'Delivery Address',
           style: TextStyle(
             color: Color(0xFF1E1E24),
             fontWeight: FontWeight.bold,
@@ -50,115 +27,127 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 10),
             const Text(
-              'Modify Shipping Destination',
+              'Current Shipping Address',
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildEditableAddressInput('Address Line 1', _line1Controller),
-            const SizedBox(height: 16),
-            _buildEditableAddressInput(
-              'Address Line 2 (Optional)',
-              _line2Controller,
-            ),
-            const SizedBox(height: 16),
-            _buildEditableAddressInput('City', _cityController),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildEditableAddressInput(
-                    'State',
-                    _stateController,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildEditableAddressInput(
-                    'ZIP Code',
-                    _zipController,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Country',
-              style: TextStyle(
-                fontSize: 13,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: Color(0xFF1E1E24),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+
+            // FIXED: Renders exactly ONE single primary delivery address box container card cleanly
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey.withValues(alpha: 0.15),
-                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.grey.withOpacity(0.08)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCountry,
-                  isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                  items: [
-                    'United States',
-                    'Nigeria',
-                    'United Kingdom',
-                    'Canada',
-                  ].map((country) {
-                    return DropdownMenuItem<String>(
-                      value: country,
-                      child: Text(
-                        country,
-                        style: const TextStyle(fontSize: 15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Primary Address',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFF6D00),
+                        ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _selectedCountry = value;
-                    });
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF6D00),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3EC),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Active',
+                          style: TextStyle(
+                            color: Color(0xFFFF6D00),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Save Address Changes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Emma Johnson\n123 Maple Street\nApt 4B, Springfield\nIL 62701, USA\n+1 (555) 123-4567',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.6,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14.0),
+                    child: Divider(height: 1),
+                  ),
+
+                  // Clean actions row containing just the edit routing trigger button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddAddressScreen(),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFF3EC),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Color(0xFFFF6D00),
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Edit Address',
+                          style: TextStyle(
+                            color: Color(0xFFFF6D00),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -167,56 +156,43 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     );
   }
 
-  Widget _buildEditableAddressInput(
-    String label,
-    TextEditingController controller,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: label,
-            hintStyle: TextStyle(
-              color: Colors.grey.withValues(alpha: 0.6),
-              fontSize: 14,
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 16,
-              horizontal: 16,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: Colors.grey.withValues(alpha: 0.15),
+  // FIXED: Repaired the broken helper function structure down here
+  Widget _buildAddressCard({
+    required String title,
+    required bool isDefault,
+    required String address,
+    required VoidCallback onEdit,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E1E24),
+                ),
               ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFFFF6D00),
-              ),
-            ),
+              if (isDefault)
+                const Icon(Icons.check_circle, color: Colors.orange),
+            ],
           ),
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1E1E24),
-          ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(address),
+        ],
+      ),
     );
   }
 }

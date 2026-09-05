@@ -6,16 +6,16 @@ import 'package:baby_shop_hub/utilities/crypto_util.dart'; // Adjust path as nee
  
 class EmailService {
   static const String _baseUrl = 'https://api.emailjs.com/api/v1.0/email/send';
- 
-  static String _serviceId = Env.emailjsServiceId;
-  static String _publicKey = Env.emailjsPublicKey;
-  static String _privateKey = Env.emailjsPrivateKey;
-  static String _userId = Env.emailjsUserId;
- 
+
+  static String _serviceId = Env.emailJsServiceId;
+  static String _publicKey = Env.emailJsPublicKey;
+  static String _privateKey = Env.emailJsKey;
+  static String _userId = Env.emailJsUserId;
+
   // EmailJS Template IDs
-  static String _otpTemplateId = Env.emailjsOtpTemplateId;
-  static String _resetPasswordTemplateId = Env.emailjsResetPasswordTemplateId;
- 
+  static String _otpTemplateId = Env.emailJsTemplateOtpId;
+  static String _resetPasswordTemplateId = Env.emailJsTemplateResetPasswordId;
+
   /// Sends a single-use OTP to the specified [recipientEmail]
   static Future<bool> sendOtp({
     required String recipientEmail,
@@ -28,7 +28,7 @@ class EmailService {
       'email': recipientEmail,
       'firstName': recipientName,
       'passcode': otp,
-      'companyName': 'Baby Shop Hub'
+      'companyName': 'Baby Shop Hub',
     };
  
     return _sendEmail(
@@ -43,12 +43,11 @@ class EmailService {
     required String recipientName,
     required String newPlainPassword,
   }) async {
- 
     final Map<String, dynamic> templateParams = {
       'email': recipientEmail,
       'firstName': recipientName,
       'password': newPlainPassword,
-      'companyName': 'Baby Shop Hub'
+      'companyName': 'Baby Shop Hub',
     };
  
     return _sendEmail(
@@ -75,9 +74,7 @@ class EmailService {
  
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
  
