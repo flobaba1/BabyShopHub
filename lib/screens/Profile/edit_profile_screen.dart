@@ -23,9 +23,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final UserSession _session = UserSession.instance;
   final ImagePicker _picker = ImagePicker();
 
-  late TextEditingController _nameController;
-  late TextEditingController _emailController;
-  late TextEditingController _addressController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _addressController;
 
   File? _profileImage;
   bool _isSaving = false;
@@ -46,12 +46,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // ============================================================
-  // IMAGE PICKER
-  // ============================================================
-
   Future<void> _showImagePickerOptions() async {
-    await showModalBottomSheet(
+    await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -75,25 +71,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(height: 20),
                 const Text(
                   'Change Profile Picture',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3EC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.orange,
-                    ),
+                  leading: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.orange,
                   ),
-                  title: const Text(
-                    'Take a Photo',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
+                  title: const Text('Take a Photo'),
                   subtitle: const Text('Use your camera'),
                   onTap: () {
                     Navigator.pop(context);
@@ -102,21 +91,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3EC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.photo_library_rounded,
-                      color: Colors.orange,
-                    ),
+                  leading: const Icon(
+                    Icons.photo_library_rounded,
+                    color: Colors.orange,
                   ),
-                  title: const Text(
-                    'Choose from Gallery',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
+                  title: const Text('Choose from Gallery'),
                   subtitle: const Text('Select an existing picture'),
                   onTap: () {
                     Navigator.pop(context);
@@ -134,7 +113,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
+      final pickedFile = await _picker.pickImage(
         source: source,
         imageQuality: 80,
         maxWidth: 1000,
@@ -154,10 +133,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  // ============================================================
-  // SAVE PROFILE
-  // ============================================================
-
   Future<void> _saveChanges() async {
     final userId = _session.userId;
 
@@ -172,16 +147,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final email = _emailController.text.trim();
     final address = _addressController.text.trim();
 
-    if (name.isEmpty) {
+    if (name.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your full name.')),
-      );
-      return;
-    }
-
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email address.')),
+        const SnackBar(content: Text('Name and email are required.')),
       );
       return;
     }
@@ -217,7 +185,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
       EasyLoading.showError('Failed to update profile');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -270,14 +240,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         borderRadius: BorderRadius.circular(28),
       ),
-      child: Center(
-        child: Text(
-          initial,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 42,
-            fontWeight: FontWeight.bold,
-          ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 42,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -318,13 +287,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.orange, width: 1.5),
+              borderSide: const BorderSide(
+                color: Colors.orange,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -364,7 +332,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         decoration: BoxDecoration(
                           color: Colors.orange,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 3,
+                          ),
                         ),
                         child: const Icon(
                           Icons.camera_alt_rounded,

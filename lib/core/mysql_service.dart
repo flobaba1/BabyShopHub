@@ -51,9 +51,6 @@ class MySQLService {
   // ===========================================================================
   // AUTHENTICATION & USERS
 
-  // ===========================================================================
-  // AUTHENTICATION & USERS
-
   Future<bool> updateUserProfile({
     required String userId,
     required String fullName,
@@ -662,6 +659,18 @@ class MySQLService {
     }
   }
 
+  Future<List<Category>> fetchCategories() async {
+    final conn = await connection;
+    final results = await conn.execute(
+      "SELECT id, name FROM Categories ORDER BY name ASC",
+    );
+
+    return results.rows.map((row) {
+      final data = row.assoc();
+      return Category(id: data['id'] ?? '', name: data['name'] ?? '');
+    }).toList();
+  }
+
   Future<Product> getProductById(String id) async {
     final conn = await connection;
 
@@ -779,6 +788,7 @@ class MySQLService {
     double? rating,
     double? discount,
     String? description,
+    Uint8List? imageBytes,
   }) async {
     final conn = await connection;
 
