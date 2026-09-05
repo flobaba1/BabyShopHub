@@ -64,7 +64,7 @@ class _ProductDetailsScreenState
   // ============================================================
 
   Future<void> _addToCart() async {
-    final userId = UserSession.instance.userId;
+    final userId = UserSession.loggedUser?.id;
 
     if (userId == null) {
       if (!mounted) return;
@@ -138,7 +138,7 @@ class _ProductDetailsScreenState
   // ============================================================
 
   Future<void> _buyNow() async {
-    final userId = UserSession.instance.userId;
+    final userId = UserSession.loggedUser?.id;
 
     if (userId == null) {
       if (!mounted) return;
