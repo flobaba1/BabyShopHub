@@ -1186,7 +1186,11 @@ class MySQLService {
 
   Future<void> _closeConnection() async {
     if (_connection != null && _connection!.connected) {
-      await _connection!.close();
+      try {
+        await _connection!.close();
+      } catch (e) {
+        log("Error closing connection: $e");
+      }
       _connection = null;
     }
   }
