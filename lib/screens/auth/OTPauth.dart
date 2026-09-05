@@ -108,7 +108,12 @@ class _OtpScreenState extends State<OtpScreen> {
     const Color greyText = Color(0xFF6B7280);
     const Color inputBackground = Color(0xFFFFF7ED);
 
-    final User user = ModalRoute.of(context)!.settings.arguments as User;
+    final User user = GoRouterState.of(context).extra as User;
+
+  // // Handle conversion if GoRouter serialized it to Map or passed User object directly
+  //   final User user = extra is User 
+  //     ? extra 
+  //     : User.fromMap(extra as Map<String, dynamic>);
 
     return Scaffold(
       backgroundColor: Colors.white,

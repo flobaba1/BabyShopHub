@@ -47,13 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
         otp: otpCode,
       );
 
-      EasyLoading.dismiss();
-
       if (isEmailSent) {
         // Navigate to the OTP verification screen
         user.metadata['otpId'] = otpId; // Store the OTP ID in the user object
+        EasyLoading.dismiss();
         context.push('/otp', extra: user);
       } else {
+        EasyLoading.dismiss();
         EasyLoading.showError('Failed to send OTP. Please try again later.');
       }
     } else {
