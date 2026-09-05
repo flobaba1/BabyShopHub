@@ -278,6 +278,64 @@ class MySQLService {
     return User.fromRow(row);
   }
 
+   Future<User?> validateUserEmail(String userEmail) async {
+    final conn = await connection;
+  
+    final result = await conn.execute(
+      "SELECT * FROM Users WHERE email = :email",
+      {"email": userEmail}
+    );
+
+    if (result.rows.isEmpty) {
+      log("No user found with email: $userEmail");
+      return null; // Email does not exist
+    }
+    return User.fromRow(result.rows.first.assoc());
+  }
+
+  /// Hashes and updates a user's password in the database.
+  /// 
+  /// Supports target identification via either [userId] or [email].
+  Future<bool> updateUserPassword({
+    String? userId,
+    String? email,
+    required String newPlainPassword,
+  }) async {
+    if ((userId == null || userId.isEmpty) && (email == null || email.isEmpty)) {
+      throw ArgumentError("Either 'userId' or 'email' must be provided to update password.");
+    }
+
+    final conn = await connection;
+
+    // 1. Hash the new plain text password
+    final String hashedPassword = SecurityHelper.hashPassword(newPlainPassword);
+
+    // 2. Build conditional UPDATE query based on identifier provided
+    final String query = userId != null && userId.isNotEmpty
+        ? "UPDATE Users SET password = :password WHERE id = :identifier"
+        : "UPDATE Users SET password = :password WHERE email = :identifier";
+
+    final String identifier = (userId != null && userId.isNotEmpty) ? userId : email!;
+
+    try {
+      final result = await conn.execute(
+        query,
+        {
+          "password": hashedPassword,
+          "identifier": identifier,
+        },
+      );
+
+      if (result.affectedRows.toInt() == 0) {
+        throw Exception("User not found with the provided details.");
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception("Failed to update user password: ${e.toString()}");
+    }
+  }
+
   /// Get the current 2FA setting for a user.
   Future<bool> getTwoFactorStatus(String userId) async {
     final conn = await connection;
@@ -991,6 +1049,142 @@ class MySQLService {
       return await addToWishlist(userId: userId, productId: productId);
     }
   }
+
+  // ===========================================================================
+  // OTHER UTILITIES
+  // ===========================================================================
+  // Existing connection getter/method assumed in your class
+  // Future<MySqlConnection> get connection => ...;
+
+  /// Creates and persists a new 6-digit OTP for a user with a default 10-minute expiry
+  Future<String?> createOTP({
+    required String userId,
+    required String code,
+    int expiryMinutes = 4,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      '''
+      INSERT INTO userOTPs (id, userId, code, isUsed, createdAt, expiresAt)
+      VALUES (
+        UUID(), 
+        :userId, 
+        :code, 
+        0, 
+        CURRENT_TIMESTAMP, 
+        DATE_ADD(CURRENT_TIMESTAMP, INTERVAL :expiryMinutes MINUTE)
+      )
+      ''',
+      {
+        "userId": userId,
+        "code": code,
+        "expiryMinutes": expiryMinutes,
+      },
+    );
+
+    if (result.affectedRows.toInt() > 0) {
+      // Retrieve the generated UUID for lookup/tracking
+      final row = await conn.execute(
+        "SELECT id FROM userOTPs WHERE userId = :userId AND code = :code ORDER BY createdAt DESC LIMIT 1",
+        {"userId": userId, "code": code},
+      );
+      return row.rows.first.assoc()['id'] as String?;
+    }
+
+    return null;
+  }
+
+  /// Verifies an OTP using otpId and userId.
+  /// Marks it as used and deletes the record upon successful match.
+  Future<bool> verifyOTP({
+    required String otpId,
+    required String userId,
+    required String inputCode,
+  }) async {
+    final conn = await connection;
+
+    // 1. Fetch valid, unexpired, and unused OTP record
+    final result = await conn.execute(
+      '''
+      SELECT code, isUsed, expiresAt 
+      FROM userOTPs 
+      WHERE id = :otpId 
+        AND userId = :userId 
+        AND isUsed = 0 
+        AND expiresAt > CURRENT_TIMESTAMP
+      ''',
+      {
+        "otpId": otpId,
+        "userId": userId,
+      },
+    );
+
+    if (result.rows.isEmpty) {
+      // OTP does not exist, is expired, or was already used
+      return false;
+    }
+
+    final storedCode = result.rows.first.assoc()['code'] as String;
+
+    // 2. Compare user input against stored code
+    if (storedCode != inputCode) {
+      return false;
+    }
+
+    // 3. Mark as used and delete the record
+    await conn.execute(
+      "UPDATE userOTPs SET isUsed = 1 WHERE id = :otpId",
+      {"otpId": otpId},
+    );
+
+    await conn.execute(
+      "DELETE FROM userOTPs WHERE id = :otpId",
+      {"otpId": otpId},
+    );
+
+    return true;
+  }
+
+  /// Updates an existing OTP record with a new code and resets its expiration duration.
+  /// 
+  /// Automatically updates [createdAt] to CURRENT_TIMESTAMP and calculates
+  /// [expiresAt] based on [expiryMinutes].
+  Future<bool> updateUserOtp({
+    required String otpId,
+    required String newOtp,
+    int expiryMinutes = 4,
+  }) async {
+    final conn = await connection;
+
+    try {
+      final result = await conn.execute(
+        '''
+        UPDATE userOTPs 
+        SET code = :newOtp,
+            isUsed = 0,
+            createdAt = CURRENT_TIMESTAMP,
+            expiresAt = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL :expiryMinutes MINUTE)
+        WHERE id = :otpId
+        ''',
+        {
+          "newOtp": newOtp,
+          "otpId": otpId,
+          "expiryMinutes": expiryMinutes,
+        },
+      );
+
+      if (result.affectedRows.toInt() == 0) {
+        throw Exception("OTP record not found for the provided ID.");
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception("Failed to update user OTP: ${e.toString()}");
+    }
+  }
+
+  // ===========================================================================
   // DISPOSAL AND CONNECTION MANAGEMENT
 
   Future<void> _closeConnection() async {
