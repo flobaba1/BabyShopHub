@@ -7,6 +7,7 @@ class UserSession {
   static const String _keyUserName = 'user_name';
   static const String _keyUserEmail = 'user_email';
   static const String _keyIsAdmin = 'is_admin';
+  static const String _KeyUserStatus = 'user_status';
 
   // List of all keys associated with an active user session
   static const List<String> _sessionKeys = [
@@ -15,6 +16,7 @@ class UserSession {
     _keyUserName,
     _keyUserEmail,
     _keyIsAdmin,
+    _KeyUserStatus,
   ];
 
   static User? loggedUser;
@@ -27,6 +29,7 @@ class UserSession {
     await prefs.setString(_keyUserName, user.fullName);
     await prefs.setString(_keyUserEmail, user.email);
     await prefs.setBool(_keyIsAdmin, user.isAdmin);
+    await prefs.setString(_KeyUserStatus, user.status);
   }
 
   /// Retrieve user session data from SharedPreferences
@@ -42,6 +45,7 @@ class UserSession {
     final String userName = prefs.getString(_keyUserName) ?? '';
     final String userEmail = prefs.getString(_keyUserEmail) ?? '';
     final bool isAdmin = prefs.getBool(_keyIsAdmin) ?? false;
+    final String userStatus = prefs.getString(_KeyUserStatus) ?? '';
 
     if (userId.isEmpty || userName.isEmpty || userEmail.isEmpty) {
       loggedUser = null;
@@ -53,6 +57,7 @@ class UserSession {
       fullName: userName,
       email: userEmail,
       isAdmin: isAdmin,
+      status: userStatus,
     );
   }
 

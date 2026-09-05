@@ -5,6 +5,7 @@ import 'package:baby_shop_hub/utilities/email_sender.dart';
 import 'package:baby_shop_hub/utilities/models/user.dart';
 import 'package:go_router/go_router.dart';
 import 'package:baby_shop_hub/utilities/crypto_util.dart';
+import 'package:baby_shop_hub/core/user_session.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -86,6 +87,7 @@ class _OtpScreenState extends State<OtpScreen> {
       EasyLoading.dismiss();
 
       if (isValid) {
+        UserSession.saveUserSession(user);
         EasyLoading.showSuccess('Verification successful!');
         if (mounted) {
           context.go('/home'); // Or navigate to next screen in flow

@@ -15,6 +15,7 @@ void main() async {
   if (isFirstTime) {
     initialRoute = '/onboarding';
   } else if (await UserSession.isLoggedIn()) {
+    await UserSession.loadUserSession(); // Load user session data
     initialRoute = '/home';
   } else {
     initialRoute = '/login';

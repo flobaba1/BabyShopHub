@@ -79,7 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
         )
         .then((user) {
           EasyLoading.dismiss();
-
+          if (user.status != 'Active') {
+            EasyLoading.showError('Your account is ${user.status}. Please contact support.');
+            return;
+          }
+          
           if (user.use2FA) {
             // Navigate to the 2FA verification screen
             _generateOTPAndNavigate(user);
