@@ -1,17 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class CheckoutPaymentScreen extends StatelessWidget {
-  const CheckoutPaymentScreen({super.key});
+class CheckoutPaymentScreen extends StatefulWidget {
+  final List<String> selectedCartItemIds;
+  final Map<String, String> address;
+
+  const CheckoutPaymentScreen({
+    super.key,
+    required this.selectedCartItemIds,
+    required this.address,
+  });
+
+  @override
+  State<CheckoutPaymentScreen> createState() =>
+      _CheckoutPaymentScreenState();
+}
+
+class _CheckoutPaymentScreenState
+    extends State<CheckoutPaymentScreen> {
+  String _selectedPayment = 'Credit / Debit Card';
+
+  void _continueToReview() {
+    context.push(
+      '/checkout/review',
+      extra: {
+        'selectedCartItemIds':
+            widget.selectedCartItemIds,
+        'address': widget.address,
+        'paymentMethod': _selectedPayment,
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isCard =
+        _selectedPayment == 'Credit / Debit Card';
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F4),
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -26,7 +56,8 @@ class CheckoutPaymentScreen extends StatelessWidget {
                       size: 20,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints:
+                        const BoxConstraints(),
                   ),
                   const Expanded(
                     child: Text(
@@ -44,9 +75,9 @@ class CheckoutPaymentScreen extends StatelessWidget {
               ),
             ),
 
-            // Checkout progress
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 35),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 35),
               child: Row(
                 children: [
                   _buildStep(
@@ -77,9 +108,11 @@ class CheckoutPaymentScreen extends StatelessWidget {
 
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Payment Method',
@@ -92,121 +125,147 @@ class CheckoutPaymentScreen extends StatelessWidget {
 
                     const SizedBox(height: 18),
 
-                    // Credit / Debit Card
                     _buildPaymentOption(
-                      icon: Icons.credit_card_outlined,
+                      icon:
+                          Icons.credit_card_outlined,
                       title: 'Credit / Debit Card',
-                      subtitle: 'Visa, Mastercard, Amex',
-                      selected: true,
-                      onTap: () {},
+                      subtitle:
+                          'Visa, Mastercard, Amex',
+                      selected:
+                          _selectedPayment ==
+                              'Credit / Debit Card',
+                      onTap: () {
+                        setState(() {
+                          _selectedPayment =
+                              'Credit / Debit Card';
+                        });
+                      },
                     ),
 
                     const SizedBox(height: 10),
 
-                    // Apple Pay
                     _buildPaymentOption(
                       icon: Icons.apple,
                       title: 'Apple Pay',
                       subtitle: 'Touch ID secured',
-                      selected: false,
-                      onTap: () {},
+                      selected:
+                          _selectedPayment == 'Apple Pay',
+                      onTap: () {
+                        setState(() {
+                          _selectedPayment =
+                              'Apple Pay';
+                        });
+                      },
                     ),
 
                     const SizedBox(height: 10),
 
-                    // Cash on Delivery
                     _buildPaymentOption(
-                      icon: Icons.payments_outlined,
+                      icon:
+                          Icons.payments_outlined,
                       title: 'Cash on Delivery',
-                      subtitle: 'Pay when you receive',
-                      selected: false,
-                      onTap: () {},
+                      subtitle:
+                          'Pay when you receive',
+                      selected:
+                          _selectedPayment ==
+                              'Cash on Delivery',
+                      onTap: () {
+                        setState(() {
+                          _selectedPayment =
+                              'Cash on Delivery';
+                        });
+                      },
                     ),
 
-                    const SizedBox(height: 22),
+                    if (isCard) ...[
+                      const SizedBox(height: 22),
 
-                    // Card details
-                    const Text(
-                      'Card Number',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
+                      const Text(
+                        'Card Number',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 6),
+                      const SizedBox(height: 6),
 
-                    _buildTextField(
-                      initialValue: '4242 4242 4242 4242',
-                    ),
+                      _buildTextField(
+                        hint: 'Card number',
+                      ),
 
-                    const SizedBox(height: 14),
+                      const SizedBox(height: 14),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Expiry',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Expiry',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight:
+                                        FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              _buildTextField(
-                                initialValue: '08/28',
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'CVV',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                                const SizedBox(height: 6),
+                                _buildTextField(
+                                  hint: 'MM/YY',
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              _buildTextField(
-                                initialValue: '•••',
-                                suffixIcon: Icons.lock_outline,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'CVV',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight:
+                                        FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                _buildTextField(
+                                  hint: 'CVV',
+                                  obscureText: true,
+                                  suffixIcon:
+                                      Icons.lock_outline,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
 
                     const SizedBox(height: 25),
 
-                    // Review Order
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {
-                          context.push('/checkout/review');
-                        },
+                        onPressed: _continueToReview,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepOrange,
+                          backgroundColor:
+                              Colors.deepOrange,
                           foregroundColor: Colors.white,
                           elevation: 4,
                           shadowColor: Colors.black26,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
+                          shape:
+                              RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(25),
                           ),
                         ),
                         child: const Text(
@@ -305,17 +364,22 @@ class CheckoutPaymentScreen extends StatelessWidget {
   }
 
   static Widget _buildTextField({
-    required String initialValue,
+    required String hint,
+    bool obscureText = false,
     IconData? suffixIcon,
   }) {
     return TextFormField(
-      initialValue: initialValue,
-      obscureText: suffixIcon != null,
+      obscureText: obscureText,
       style: const TextStyle(
         fontSize: 11,
         color: Colors.black,
       ),
       decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(
+          fontSize: 11,
+          color: Colors.grey,
+        ),
         suffixIcon: suffixIcon != null
             ? Icon(
                 suffixIcon,
@@ -323,7 +387,8 @@ class CheckoutPaymentScreen extends StatelessWidget {
                 color: Colors.grey,
               )
             : null,
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding:
+            const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 11,
         ),
@@ -395,9 +460,7 @@ class CheckoutPaymentScreen extends StatelessWidget {
                 : FontWeight.normal,
             color: active
                 ? Colors.deepOrange
-                : completed
-                    ? Colors.grey
-                    : Colors.grey,
+                : Colors.grey,
           ),
         ),
       ],

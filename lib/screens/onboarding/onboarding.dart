@@ -44,8 +44,8 @@ class OnboardingScreen extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.1),
-                        Colors.black.withOpacity(0.6),
+                        Colors.black.withValues(alpha: 0.1),
+                        Colors.black.withValues(alpha: 0.6),
                       ],
                     ),
                   ),
@@ -82,7 +82,7 @@ class OnboardingScreen extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             height: 1.35,
                           ),
                         ),
@@ -142,7 +142,7 @@ class OnboardingScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () => _finishOnboarding(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: const BorderSide(color: Color(0xFFEEEEEE)),
@@ -169,14 +169,15 @@ class OnboardingScreen extends StatelessWidget {
                               BoxShadow(
                                 color: const Color(
                                   0xFFFF6600,
-                                ).withOpacity(0.25),
+                                ).withValues(alpha: 0.25),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () => context.go('/onboarding2'),
+
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF6600),
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -210,26 +211,26 @@ class OnboardingScreen extends StatelessWidget {
                   ),
 
                   // Authentication Navigation Router
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Already have an account? ',
-                        style: TextStyle(color: Colors.grey, fontSize: 14),
-                      ),
-                      GestureDetector(
-                        onTap: () {},
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
-                            color: Color(0xFFFF6600),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     const Text(
+                  //       'Already have an account? ',
+                  //       style: TextStyle(color: Colors.grey, fontSize: 14),
+                  //     ),
+                  //     GestureDetector(
+                  //       onTap: () {},
+                  //       child: const Text(
+                  //         'Sign In',
+                  //         style: TextStyle(
+                  //           color: Color(0xFFFF6600),
+                  //           fontWeight: FontWeight.bold,
+                  //           fontSize: 14,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),

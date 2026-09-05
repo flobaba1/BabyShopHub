@@ -1,62 +1,158 @@
 import 'package:flutter/material.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:baby_shop_hub/core/user_session.dart';
+
 import 'track_order_screen.dart';
 
-class MyOrdersScreen extends StatelessWidget {
+class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> orders = [
-      {
-        'date': 'Aug 20, 2026',
-        'orderId': 'ORD-2026-003',
-        'status': 'Processing',
-        'statusColor': const Color(0xFFE65100),
-        'statusBg': const Color(0xFFFFF3E0),
-        'itemsCount': 1,
-        'price': '94.98',
-        'icons': [Icons.card_giftcard],
-      },
-      {
-        'date': 'Aug 18, 2026',
-        'orderId': 'ORD-2026-002',
-        'status': 'Shipped',
-        'statusColor': const Color(0xFF7B1FA2),
-        'statusBg': const Color(0xFFF3E5F5),
-        'itemsCount': 3,
-        'price': '77.97',
-        'icons': [Icons.child_care, Icons.checkroom],
-      },
-      {
-        'date': 'Aug 15, 2026',
-        'orderId': 'ORD-2026-001',
-        'status': 'Delivered',
-        'statusColor': const Color(0xFF2E7D32),
-        'statusBg': const Color(0xFFE8F5E9),
-        'itemsCount': 3,
-        'price': '62.97',
-        'icons': [Icons.layers, Icons.card_giftcard],
-      },
-    ];
+  State<MyOrdersScreen> createState() => _MyOrdersScreenState();
+}
 
+class _MyOrdersScreenState extends State<MyOrdersScreen> {
+  final MySQLService _mysqlService = MySQLService();
+
+  List<Map<String, String?>> _orders = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    final userId = UserSession.instance.userId;
+
+    if (userId == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Please log in to view your orders.';
+      });
+      return;
+    }
+
+    try {
+      final orders = await _mysqlService.getUserOrders(userId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _orders = orders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Unable to load your orders.';
+      });
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'processing':
+        return const Color(0xFFE65100);
+
+      case 'shipped':
+        return const Color(0xFF7B1FA2);
+
+      case 'delivered':
+        return const Color(0xFF2E7D32);
+
+      case 'pending':
+      default:
+        return const Color(0xFF1565C0);
+    }
+  }
+
+  Color _getStatusBackground(String status) {
+    switch (status.toLowerCase()) {
+      case 'processing':
+        return const Color(0xFFFFF3E0);
+
+      case 'shipped':
+        return const Color(0xFFF3E5F5);
+
+      case 'delivered':
+        return const Color(0xFFE8F5E9);
+
+      case 'pending':
+      default:
+        return const Color(0xFFE3F2FD);
+    }
+  }
+
+  String _formatStatus(String status) {
+    if (status.isEmpty) return 'Pending';
+
+    return status[0].toUpperCase() + status.substring(1).toLowerCase();
+  }
+
+  String _formatDate(String? date) {
+    if (date == null || date.isEmpty) {
+      return '';
+    }
+
+    try {
+      final parsedDate = DateTime.parse(date);
+
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+
+      return '${months[parsedDate.month - 1]} '
+          '${parsedDate.day}, '
+          '${parsedDate.year}';
+    } catch (_) {
+      return date;
+    }
+  }
+
+  String _formatPrice(String? price) {
+    final amount = double.tryParse(price ?? '0') ?? 0;
+    return amount.toStringAsFixed(2);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      // Setting your custom background color precisely
       backgroundColor: const Color(0xFFFFF8F4),
+
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black87,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 2. Header Layout Section
               Row(
                 children: [
                   const Text(
@@ -68,26 +164,27 @@ class MyOrdersScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text('📦', style: TextStyle(fontSize: 24)),
+                  const Text(
+                    '📦',
+                    style: TextStyle(fontSize: 24),
+                  ),
                 ],
               ),
+
               const SizedBox(height: 4),
+
               Text(
-                '${orders.length} total orders',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                '${_orders.length} total orders',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
               ),
+
               const SizedBox(height: 20),
 
-              // 3. Dynamic Orders Scroll List Area
               Expanded(
-                child: ListView.builder(
-                  itemCount: orders.length,
-                  physics: const BouncingScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    return _buildOrderCard(context, order);
-                  },
-                ),
+                child: _buildBody(),
               ),
             ],
           ),
@@ -96,28 +193,152 @@ class MyOrdersScreen extends StatelessWidget {
     );
   }
 
-  // 4. Custom Component Widget for cleanly structuring each individual Order Card
-  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Colors.orange,
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 50,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _isLoading = true;
+                  _errorMessage = null;
+                });
+
+                _loadOrders();
+              },
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 90,
+              width: 90,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3EE),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: const Icon(
+                Icons.shopping_bag_outlined,
+                size: 45,
+                color: Colors.orange,
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            const Text(
+              'No orders yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E1E24),
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            const Text(
+              'Your completed orders will appear here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: Colors.orange,
+      onRefresh: _loadOrders,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        itemCount: _orders.length,
+        itemBuilder: (context, index) {
+          final order = _orders[index];
+
+          return _buildOrderCard(
+            context,
+            order,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(
+    BuildContext context,
+    Map<String, String?> order,
+  ) {
+    final status = order['status'] ?? 'pending';
+
+    final statusColor = _getStatusColor(status);
+    final statusBg = _getStatusBackground(status);
+
+    final itemsCount =
+        int.tryParse(order['itemsCount'] ?? '0') ?? 0;
+
+    final total = _formatPrice(order['totalAmount']);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.12),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row containing Order Metadata info and Status Pill Tag
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,31 +347,38 @@ class MyOrdersScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    order['date'],
+                    _formatDate(order['createdAt']),
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+
                   const SizedBox(height: 4),
-                  Text(
-                    order['orderId'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1E24),
+
+                  SizedBox(
+                    width: 170,
+                    child: Text(
+                      'Order #${order['id']}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E1E24),
+                      ),
                     ),
                   ),
                 ],
               ),
+
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: order['statusBg'],
+                  color: statusBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -160,15 +388,17 @@ class MyOrdersScreen extends StatelessWidget {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: order['statusColor'],
+                        color: statusColor,
                         shape: BoxShape.circle,
                       ),
                     ),
+
                     const SizedBox(width: 6),
+
                     Text(
-                      order['status'],
+                      _formatStatus(status),
                       style: TextStyle(
-                        color: order['statusColor'],
+                        color: statusColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -178,44 +408,46 @@ class MyOrdersScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // Row containing Preview Thumbnails for ordered items
-          Row(
-            children: (order['icons'] as List<IconData>).map((icon) {
-              return Container(
-                margin: const EdgeInsets.only(right: 12),
-                height: 64,
-                width: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3EE),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(icon, color: Colors.orange.shade300, size: 28),
-              );
-            }).toList(),
+          const SizedBox(height: 20),
+
+          Container(
+            height: 64,
+            width: 64,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3EE),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.shopping_bag_outlined,
+              color: Colors.orange,
+              size: 28,
+            ),
           ),
+
           const SizedBox(height: 16),
 
-          // Bottom Action row containing items recap statement and functional Track Order CTA Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${order['itemsCount']} items · \$${order['price']}',
+                '$itemsCount ${itemsCount == 1 ? 'item' : 'items'} · ₦$total',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Colors.black54,
                 ),
               ),
+
               TextButton.icon(
                 onPressed: () {
-                  // Integrated explicit navigation logic to Route forward to your TrackOrderScreen component
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const TrackOrderScreen(),
+                      builder: (context) => TrackOrderScreen(
+                        orderId: order['id'] ?? '',
+                        status: status,
+                      ),
                     ),
                   );
                 },

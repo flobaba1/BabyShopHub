@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
 
 class Product {
   final String id;
@@ -50,23 +49,5 @@ class Product {
           : DateTime.now(),
       image: null,
     );
-  }
-
-  Color getBadgeColor(String badge) {
-    switch (badge.toLowerCase()) {
-      case 'organic':
-        return const Color(0xFF13A765);
-      case 'sale':
-        return const Color(0xFFFF3D3D);
-      case 'new':
-        return const Color(0xFF3685E8);
-      case 'top rated':
-      case 'best seller':
-        return const Color(0xFFFF6600);
-      case 'featured':
-        return const Color(0xFF8E5BEF);
-      default:
-        return const Color(0xFFFF6600);
-    }
   }
 }

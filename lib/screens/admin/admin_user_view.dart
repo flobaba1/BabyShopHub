@@ -186,6 +186,13 @@ class _AdminUsersViewState extends State<AdminUsersView> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.0),
         border: Border.all(color: const Color(0xFFF3F4F6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,

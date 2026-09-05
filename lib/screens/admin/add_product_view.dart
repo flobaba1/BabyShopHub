@@ -314,6 +314,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               const SizedBox(height: 14),
               _buildLabel('Category'),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedCategory,
+                items: _categories.map((cat) {
+                  return DropdownMenuItem(value: cat, child: Text(cat));
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedCategory = val);
+                },
+                decoration: _buildInputDecoration('Select Category'),
+              ),
               _isLoadingCategories
                   ? const Center(
                       child: Padding(
