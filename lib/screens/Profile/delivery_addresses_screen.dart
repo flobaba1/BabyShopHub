@@ -57,6 +57,51 @@ class DeliveryAddressesScreen extends StatelessWidget {
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
+                ),
+                icon: const Icon(Icons.add, color: Colors.orange, size: 20),
+                label: const Text(
+                  'Add New Address',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddressCard({
+    required String title,
+    required bool isDefault,
+    required String address,
+    required VoidCallback onEdit,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E1E24),
+                ),
                 ],
               ),
               child: Column(

@@ -83,6 +83,52 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
+                  Expanded(child: _buildFormInput('ZIP Code', _zipController)),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              const Text(
+                'Country',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedCountry,
+                    isExpanded: true,
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    items:
+                        [
+                          'United States',
+                          'Nigeria',
+                          'United Kingdom',
+                          'Canada',
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              value,
+                              style: const TextStyle(fontSize: 15),
+                            ),
+                          );
+                        }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedCountry = val!;
+                      });
+                    },
                   Expanded(
                     child: _buildEditableAddressInput(
                       'ZIP Code',
@@ -142,6 +188,11 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         TextField(
           controller: controller,
           decoration: InputDecoration(
+            hintText: placeholder,
+            hintStyle: TextStyle(
+              color: Colors.grey.withValues(alpha: 0.6),
+              fontSize: 14,
+            ),
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(
@@ -150,7 +201,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.15)),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

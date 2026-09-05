@@ -2,8 +2,76 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class CheckoutAddressScreen extends StatelessWidget {
-  const CheckoutAddressScreen({super.key});
+class CheckoutAddressScreen extends StatefulWidget {
+  final List<String> selectedCartItemIds;
+
+  const CheckoutAddressScreen({
+    super.key,
+    required this.selectedCartItemIds,
+  });
+
+  @override
+  State<CheckoutAddressScreen> createState() =>
+      _CheckoutAddressScreenState();
+}
+
+class _CheckoutAddressScreenState
+    extends State<CheckoutAddressScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _fullNameController =
+      TextEditingController();
+
+  final _phoneController =
+      TextEditingController();
+
+  final _streetController =
+      TextEditingController();
+
+  final _cityController =
+      TextEditingController();
+
+  final _stateController =
+      TextEditingController();
+
+  final _zipController =
+      TextEditingController();
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _streetController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _zipController.dispose();
+
+    super.dispose();
+  }
+
+  void _continueToPayment() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final address = {
+      'fullName': _fullNameController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'street': _streetController.text.trim(),
+      'city': _cityController.text.trim(),
+      'state': _stateController.text.trim(),
+      'zipCode': _zipController.text.trim(),
+    };
+
+    context.push(
+      '/checkout/payment',
+      extra: {
+        'selectedCartItemIds':
+            widget.selectedCartItemIds,
+        'address': address,
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +80,6 @@ class CheckoutAddressScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -27,7 +94,8 @@ class CheckoutAddressScreen extends StatelessWidget {
                       size: 20,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints:
+                        const BoxConstraints(),
                   ),
                   const Expanded(
                     child: Text(
@@ -45,9 +113,9 @@ class CheckoutAddressScreen extends StatelessWidget {
               ),
             ),
 
-            // Checkout progress
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 35),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 35),
               child: Row(
                 children: [
                   _buildStep(
@@ -74,122 +142,140 @@ class CheckoutAddressScreen extends StatelessWidget {
             const SizedBox(height: 28),
 
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Delivery Address',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    _buildLabel('Full Name'),
-                    const SizedBox(height: 6),
-                    _buildTextField(
-                      initialValue: 'Emma Johnson',
-                      iconAsset: 'assets/users_Icon.svg',
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    _buildLabel('Phone Number'),
-                    const SizedBox(height: 6),
-                    _buildTextField(
-                      initialValue: '+1 (555) 123-4567',
-                      iconAsset: 'assets/phone_Icon.svg',
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    _buildLabel('Street Address'),
-                    const SizedBox(height: 6),
-                    _buildTextField(
-                      initialValue: '123 Maple Street',
-                      iconAsset: 'assets/drop_pin_Icon.svg',
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    _buildLabel('City'),
-                    const SizedBox(height: 6),
-                    _buildTextField(
-                      initialValue: 'Springfield',
-                      iconAsset: 'assets/drop_pin_Icon.svg',
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              _buildLabel('State'),
-                              const SizedBox(height: 6),
-                              _buildTextField(
-                                initialValue: 'IL',
-                                iconAsset: 'assets/drop_pin_Icon.svg',
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              _buildLabel('ZIP Code'),
-                              const SizedBox(height: 6),
-                              _buildTextField(
-                                initialValue: '62701',
-                                iconAsset: 'assets/drop_pin_Icon.svg',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.push('/checkout/payment');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepOrange,
-                          foregroundColor: Colors.white,
-                          elevation: 4,
-                          shadowColor: Colors.black26,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: const Text(
-                          'Continue to Payment →',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Delivery Address',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 25),
-                  ],
+                      const SizedBox(height: 18),
+
+                      _buildLabel('Full Name'),
+                      const SizedBox(height: 6),
+                      _buildTextField(
+                        controller: _fullNameController,
+                        iconAsset:
+                            'assets/users_Icon.svg',
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      _buildLabel('Phone Number'),
+                      const SizedBox(height: 6),
+                      _buildTextField(
+                        controller: _phoneController,
+                        iconAsset:
+                            'assets/phone_Icon.svg',
+                        keyboardType:
+                            TextInputType.phone,
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      _buildLabel('Street Address'),
+                      const SizedBox(height: 6),
+                      _buildTextField(
+                        controller: _streetController,
+                        iconAsset:
+                            'assets/drop_pin_Icon.svg',
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      _buildLabel('City'),
+                      const SizedBox(height: 6),
+                      _buildTextField(
+                        controller: _cityController,
+                        iconAsset:
+                            'assets/drop_pin_Icon.svg',
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel('State'),
+                                const SizedBox(height: 6),
+                                _buildTextField(
+                                  controller:
+                                      _stateController,
+                                  iconAsset:
+                                      'assets/drop_pin_Icon.svg',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel('ZIP Code'),
+                                const SizedBox(height: 6),
+                                _buildTextField(
+                                  controller:
+                                      _zipController,
+                                  iconAsset:
+                                      'assets/drop_pin_Icon.svg',
+                                  keyboardType:
+                                      TextInputType.number,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 25),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _continueToPayment,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Colors.deepOrange,
+                            foregroundColor: Colors.white,
+                            elevation: 4,
+                            shadowColor: Colors.black26,
+                            shape:
+                                RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(25),
+                            ),
+                          ),
+                          child: const Text(
+                            'Continue to Payment →',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 25),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -211,15 +297,23 @@ class CheckoutAddressScreen extends StatelessWidget {
   }
 
   static Widget _buildTextField({
-    required String initialValue,
+    required TextEditingController controller,
     required String iconAsset,
+    TextInputType? keyboardType,
   }) {
     return TextFormField(
-      initialValue: initialValue,
+      controller: controller,
+      keyboardType: keyboardType,
       style: const TextStyle(
         fontSize: 11,
         color: Colors.black,
       ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Required';
+        }
+        return null;
+      },
       decoration: InputDecoration(
         prefixIcon: Padding(
           padding: const EdgeInsets.all(10),
@@ -229,7 +323,8 @@ class CheckoutAddressScreen extends StatelessWidget {
             height: 18,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding:
+            const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 11,
         ),
@@ -277,7 +372,9 @@ class CheckoutAddressScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: active ? Colors.white : Colors.grey,
+              color: active
+                  ? Colors.white
+                  : Colors.grey,
             ),
           ),
         ),
@@ -289,7 +386,9 @@ class CheckoutAddressScreen extends StatelessWidget {
             fontWeight: active
                 ? FontWeight.w600
                 : FontWeight.normal,
-            color: active ? Colors.deepOrange : Colors.grey,
+            color: active
+                ? Colors.deepOrange
+                : Colors.grey,
           ),
         ),
       ],
@@ -312,3 +411,4 @@ class CheckoutAddressScreen extends StatelessWidget {
     );
   }
 }
+

@@ -3,7 +3,6 @@ import 'package:baby_shop_hub/utilities/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/utilities/models/user.dart';
 import 'package:baby_shop_hub/utilities/models/cart_item.dart';
-import 'package:baby_shop_hub/utilities/models/category.dart';
 import 'package:baby_shop_hub/utilities/security_helper.dart';
 import 'package:baby_shop_hub/utilities/models/user_card.dart';
 import 'package:baby_shop_hub/utilities/models/wishlist_item.dart';
@@ -279,6 +278,64 @@ class MySQLService {
     return User.fromRow(row);
   }
 
+   Future<User?> validateUserEmail(String userEmail) async {
+    final conn = await connection;
+  
+    final result = await conn.execute(
+      "SELECT * FROM Users WHERE email = :email",
+      {"email": userEmail}
+    );
+
+    if (result.rows.isEmpty) {
+      log("No user found with email: $userEmail");
+      return null; // Email does not exist
+    }
+    return User.fromRow(result.rows.first.assoc());
+  }
+
+  /// Hashes and updates a user's password in the database.
+  /// 
+  /// Supports target identification via either [userId] or [email].
+  Future<bool> updateUserPassword({
+    String? userId,
+    String? email,
+    required String newPlainPassword,
+  }) async {
+    if ((userId == null || userId.isEmpty) && (email == null || email.isEmpty)) {
+      throw ArgumentError("Either 'userId' or 'email' must be provided to update password.");
+    }
+
+    final conn = await connection;
+
+    // 1. Hash the new plain text password
+    final String hashedPassword = SecurityHelper.hashPassword(newPlainPassword);
+
+    // 2. Build conditional UPDATE query based on identifier provided
+    final String query = userId != null && userId.isNotEmpty
+        ? "UPDATE Users SET password = :password WHERE id = :identifier"
+        : "UPDATE Users SET password = :password WHERE email = :identifier";
+
+    final String identifier = (userId != null && userId.isNotEmpty) ? userId : email!;
+
+    try {
+      final result = await conn.execute(
+        query,
+        {
+          "password": hashedPassword,
+          "identifier": identifier,
+        },
+      );
+
+      if (result.affectedRows.toInt() == 0) {
+        throw Exception("User not found with the provided details.");
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception("Failed to update user password: ${e.toString()}");
+    }
+  }
+
   /// Get the current 2FA setting for a user.
   Future<bool> getTwoFactorStatus(String userId) async {
     final conn = await connection;
@@ -353,8 +410,68 @@ class MySQLService {
     required String productId,
     int quantity = 1,
   }) async {
+    if (quantity <= 0) {
+      throw Exception('Quantity must be greater than zero.');
+    }
+
     final conn = await connection;
 
+    // Get product stock and existing cart quantity.
+    final result = await conn.execute(
+      '''
+    SELECT
+      p.quantity AS stockQuantity,
+      c.id AS cartItemId,
+      c.quantity AS cartQuantity
+    FROM Products p
+    LEFT JOIN CartItems c
+      ON c.productId = p.id
+      AND c.userId = :userId
+    WHERE p.id = :productId
+    ''',
+      {'userId': userId, 'productId': productId},
+    );
+
+    if (result.rows.isEmpty) {
+      throw Exception('Product not found.');
+    }
+
+    final row = result.rows.first.assoc();
+
+    final stockQuantity = int.tryParse(row['stockQuantity'] ?? '0') ?? 0;
+
+    final existingCartQuantity = int.tryParse(row['cartQuantity'] ?? '0') ?? 0;
+
+    if (stockQuantity <= 0) {
+      throw Exception('This product is out of stock.');
+    }
+
+    final newQuantity = existingCartQuantity + quantity;
+
+    if (newQuantity > stockQuantity) {
+      final remaining = stockQuantity - existingCartQuantity;
+
+      if (remaining <= 0) {
+        throw Exception(
+          'You already have the maximum available quantity in your cart.',
+        );
+      }
+
+      throw Exception('Only $remaining more item(s) available in stock.');
+    }
+
+    // Product already exists in cart.
+    if (row['cartItemId'] != null) {
+      final updateResult = await conn.execute(
+        '''
+      UPDATE CartItems
+      SET quantity = :quantity
+      WHERE id = :id
+      ''',
+        {'quantity': newQuantity, 'id': row['cartItemId']},
+      );
+
+      return updateResult.affectedRows.toInt() > 0;
     final existing = await conn.execute(
       "SELECT id, quantity FROM CartItems "
       "WHERE userId = :userId AND productId = :productId",
@@ -384,41 +501,80 @@ class MySQLService {
 
       return result.affectedRows.toInt() > 0;
     }
+
+    // Product does not exist in cart.
+    final insertResult = await conn.execute(
+      '''
+    INSERT INTO CartItems
+      (id, productId, userId, quantity)
+    VALUES
+      (UUID(), :productId, :userId, :quantity)
+    ''',
+      {'productId': productId, 'userId': userId, 'quantity': quantity},
+    );
+
+    return insertResult.affectedRows.toInt() > 0;
   }
 
   Future<List<CartItem>> getUserCart(String userId) async {
     final conn = await connection;
 
     final result = await conn.execute(
-      "SELECT id, productId, userId, quantity, createdAt "
-      "FROM CartItems WHERE userId = :userId",
-      {"userId": userId},
+      '''
+    SELECT
+      id,
+      productId,
+      userId,
+      quantity,
+      createdAt
+    FROM CartItems
+    WHERE userId = :userId
+    ORDER BY createdAt DESC
+    ''',
+      {'userId': userId},
     );
 
     return result.rows.map((row) => CartItem.fromRow(row.assoc())).toList();
   }
 
-  // fetch categories
-  Future<List<Category>> fetchCategories() async {
-    final conn = await connection;
-    final result = await conn.execute(
-      "SELECT id, name FROM Categories ORDER BY name ASC",
-    );
-
-    return result.rows.map((row) => Category.fromRow(row.assoc())).toList();
-  }
-
-  /// Update Cart Item Quantity
   Future<bool> updateCartQuantity(String cartItemId, int quantity) async {
+    final conn = await connection;
+
     if (quantity <= 0) {
       return deleteCartItem(cartItemId);
     }
 
-    final conn = await connection;
+    // Make sure the requested quantity does not exceed stock.
+    final stockResult = await conn.execute(
+      '''
+    SELECT p.quantity AS stockQuantity
+    FROM CartItems c
+    INNER JOIN Products p
+      ON p.id = c.productId
+    WHERE c.id = :cartItemId
+    ''',
+      {'cartItemId': cartItemId},
+    );
+
+    if (stockResult.rows.isEmpty) {
+      return false;
+    }
+
+    final stockQuantity =
+        int.tryParse(stockResult.rows.first.assoc()['stockQuantity'] ?? '0') ??
+        0;
+
+    if (quantity > stockQuantity) {
+      throw Exception('Only $stockQuantity item(s) available in stock.');
+    }
 
     final result = await conn.execute(
-      "UPDATE CartItems SET quantity = :quantity WHERE id = :id",
-      {"quantity": quantity, "id": cartItemId},
+      '''
+    UPDATE CartItems
+    SET quantity = :quantity
+    WHERE id = :id
+    ''',
+      {'quantity': quantity, 'id': cartItemId},
     );
 
     return result.affectedRows.toInt() > 0;
@@ -426,9 +582,15 @@ class MySQLService {
 
   Future<bool> deleteCartItem(String cartItemId) async {
     final conn = await connection;
-    final result = await conn.execute("DELETE FROM CartItems WHERE id = :id", {
-      "id": cartItemId,
-    });
+
+    final result = await conn.execute(
+      '''
+    DELETE FROM CartItems
+    WHERE id = :id
+    ''',
+      {'id': cartItemId},
+    );
+
     return result.affectedRows.toInt() > 0;
   }
 
@@ -436,8 +598,11 @@ class MySQLService {
     final conn = await connection;
 
     final result = await conn.execute(
-      "DELETE FROM CartItems WHERE userId = :userId",
-      {"userId": userId},
+      '''
+    DELETE FROM CartItems
+    WHERE userId = :userId
+    ''',
+      {'userId': userId},
     );
 
     return result.affectedRows.toInt() > 0;
@@ -649,12 +814,31 @@ class MySQLService {
       },
     );
 
-    // Update image only if the user selected a new image
-    if (imageBytes != null) {
-      await conn.execute("UPDATE Products SET image = :image WHERE id = :id", {
-        "id": id,
-        "image": imageBytes,
-      });
+    if (result.affectedRows.toInt() == 0) {
+      throw Exception(
+        "Failed to update product. Product ID '$id' does not exist.",
+      );
+    }
+
+    return true;
+  }
+
+  /// Update or Upload Product Image BLOB
+  Future<bool> updateProductImage({
+    required String productId,
+    required Uint8List imageBytes,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      "UPDATE Products SET image = :image WHERE id = :id",
+      {"id": productId, "image": imageBytes},
+    );
+
+    if (result.affectedRows.toInt() == 0) {
+      throw Exception(
+        "Failed to upload image. Product ID '$productId' does not exist.",
+      );
     }
 
     return true;
@@ -676,6 +860,38 @@ class MySQLService {
     return true;
   }
 
+  // ===========================================================================
+  // CATEGORIES
+  // ===========================================================================
+
+  /// Fetch all categories with the number of products in each category
+  Future<List<Map<String, dynamic>>> getCategoriesWithProductCount() async {
+    final conn = await connection;
+
+    final result = await conn.execute('''
+    SELECT 
+        c.id,
+        c.name AS category,
+        COUNT(p.id) AS product_count
+    FROM Categories c
+    LEFT JOIN Products p 
+        ON p.categoryId = c.id
+    GROUP BY c.id, c.name
+    ORDER BY c.name
+  ''');
+
+    return result.rows.map((row) {
+      final data = row.assoc();
+
+      return {
+        'id': data['id'],
+        'name': data['category'],
+        'count': int.tryParse(data['product_count'] ?? '0') ?? 0,
+      };
+    }).toList();
+  }
+
+  // ===========================================================================
   // USER CARDS CRUD
 
   Future<bool> addUserCard({
@@ -794,8 +1010,7 @@ class MySQLService {
     final conn = await connection;
 
     final result = await conn.execute(
-      "SELECT id FROM UserWishlist "
-      "WHERE userId = :userId AND productId = :productId",
+      "SELECT id FROM UserWishlist WHERE userId = :userId AND productId = :productId",
       {"userId": userId, "productId": productId},
     );
 
@@ -809,8 +1024,7 @@ class MySQLService {
     final conn = await connection;
 
     final result = await conn.execute(
-      "DELETE FROM UserWishlist "
-      "WHERE userId = :userId AND productId = :productId",
+      "DELETE FROM UserWishlist WHERE userId = :userId AND productId = :productId",
       {"userId": userId, "productId": productId},
     );
 
@@ -837,8 +1051,141 @@ class MySQLService {
   }
 
   // ===========================================================================
-  // DISPOSAL AND CONNECTION MANAGEMENT
+  // OTHER UTILITIES
   // ===========================================================================
+  // Existing connection getter/method assumed in your class
+  // Future<MySqlConnection> get connection => ...;
+
+  /// Creates and persists a new 6-digit OTP for a user with a default 10-minute expiry
+  Future<String?> createOTP({
+    required String userId,
+    required String code,
+    int expiryMinutes = 4,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      '''
+      INSERT INTO userOTPs (id, userId, code, isUsed, createdAt, expiresAt)
+      VALUES (
+        UUID(), 
+        :userId, 
+        :code, 
+        0, 
+        CURRENT_TIMESTAMP, 
+        DATE_ADD(CURRENT_TIMESTAMP, INTERVAL :expiryMinutes MINUTE)
+      )
+      ''',
+      {
+        "userId": userId,
+        "code": code,
+        "expiryMinutes": expiryMinutes,
+      },
+    );
+
+    if (result.affectedRows.toInt() > 0) {
+      // Retrieve the generated UUID for lookup/tracking
+      final row = await conn.execute(
+        "SELECT id FROM userOTPs WHERE userId = :userId AND code = :code ORDER BY createdAt DESC LIMIT 1",
+        {"userId": userId, "code": code},
+      );
+      return row.rows.first.assoc()['id'] as String?;
+    }
+
+    return null;
+  }
+
+  /// Verifies an OTP using otpId and userId.
+  /// Marks it as used and deletes the record upon successful match.
+  Future<bool> verifyOTP({
+    required String otpId,
+    required String userId,
+    required String inputCode,
+  }) async {
+    final conn = await connection;
+
+    // 1. Fetch valid, unexpired, and unused OTP record
+    final result = await conn.execute(
+      '''
+      SELECT code, isUsed, expiresAt 
+      FROM userOTPs 
+      WHERE id = :otpId 
+        AND userId = :userId 
+        AND isUsed = 0 
+        AND expiresAt > CURRENT_TIMESTAMP
+      ''',
+      {
+        "otpId": otpId,
+        "userId": userId,
+      },
+    );
+
+    if (result.rows.isEmpty) {
+      // OTP does not exist, is expired, or was already used
+      return false;
+    }
+
+    final storedCode = result.rows.first.assoc()['code'] as String;
+
+    // 2. Compare user input against stored code
+    if (storedCode != inputCode) {
+      return false;
+    }
+
+    // 3. Mark as used and delete the record
+    await conn.execute(
+      "UPDATE userOTPs SET isUsed = 1 WHERE id = :otpId",
+      {"otpId": otpId},
+    );
+
+    await conn.execute(
+      "DELETE FROM userOTPs WHERE id = :otpId",
+      {"otpId": otpId},
+    );
+
+    return true;
+  }
+
+  /// Updates an existing OTP record with a new code and resets its expiration duration.
+  /// 
+  /// Automatically updates [createdAt] to CURRENT_TIMESTAMP and calculates
+  /// [expiresAt] based on [expiryMinutes].
+  Future<bool> updateUserOtp({
+    required String otpId,
+    required String newOtp,
+    int expiryMinutes = 4,
+  }) async {
+    final conn = await connection;
+
+    try {
+      final result = await conn.execute(
+        '''
+        UPDATE userOTPs 
+        SET code = :newOtp,
+            isUsed = 0,
+            createdAt = CURRENT_TIMESTAMP,
+            expiresAt = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL :expiryMinutes MINUTE)
+        WHERE id = :otpId
+        ''',
+        {
+          "newOtp": newOtp,
+          "otpId": otpId,
+          "expiryMinutes": expiryMinutes,
+        },
+      );
+
+      if (result.affectedRows.toInt() == 0) {
+        throw Exception("OTP record not found for the provided ID.");
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception("Failed to update user OTP: ${e.toString()}");
+    }
+  }
+
+  // ===========================================================================
+  // DISPOSAL AND CONNECTION MANAGEMENT
 
   Future<void> _closeConnection() async {
     if (_connection != null && _connection!.connected) {
@@ -852,42 +1199,414 @@ class MySQLService {
     await _closeConnection();
   }
 
-  Future<User> getUserById(String userId) async {
-    final conn = await connection;
 
-    final result = await conn.execute(
-      "SELECT id, fullName, email, address, password, status, "
-      "createdAt, isAdmin, use2FA "
-      "FROM Users WHERE id = :id",
-      {"id": userId},
-    );
+// ORDERS & CHECKOUT
 
-    if (result.rows.isEmpty) {
-      throw Exception("User not found.");
+
+Future<Map<String, dynamic>> getCheckoutItems({
+  required String userId,
+  required List<String> cartItemIds,
+}) async {
+  if (cartItemIds.isEmpty) {
+    throw Exception('No items selected for checkout.');
+  }
+
+  final conn = await connection;
+
+  final placeholders = List.generate(
+    cartItemIds.length,
+    (index) => ':cartId$index',
+  ).join(', ');
+
+  final params = <String, dynamic>{
+    'userId': userId,
+  };
+
+  for (int i = 0; i < cartItemIds.length; i++) {
+    params['cartId$i'] = cartItemIds[i];
+  }
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      c.id AS cartItemId,
+      c.productId,
+      c.quantity AS cartQuantity,
+
+      p.name,
+      p.price,
+      p.quantity AS stockQuantity,
+      p.discount,
+      p.description
+
+    FROM CartItems c
+
+    INNER JOIN Products p
+      ON p.id = c.productId
+
+    WHERE c.userId = :userId
+      AND c.id IN ($placeholders)
+
+    ORDER BY c.createdAt DESC
+    ''',
+    params,
+  );
+
+  return {
+    'rows': result.rows,
+  };
+}
+
+
+Future<String> createOrder({
+  required String userId,
+  required List<String> cartItemIds,
+  required String shippingAddress,
+  required String paymentMethod,
+  String? notes,
+}) async {
+  if (cartItemIds.isEmpty) {
+    throw Exception('No items selected for checkout.');
+  }
+
+  final conn = await connection;
+
+  try {
+    // ------------------------------------------------------------
+    // START TRANSACTION
+    // ------------------------------------------------------------
+    await conn.execute('START TRANSACTION');
+
+    final placeholders = List.generate(
+      cartItemIds.length,
+      (index) => ':cartId$index',
+    ).join(', ');
+
+    final params = <String, dynamic>{
+      'userId': userId,
+    };
+
+    for (int i = 0; i < cartItemIds.length; i++) {
+      params['cartId$i'] = cartItemIds[i];
     }
 
-    final row = result.rows.first.assoc();
+    // ------------------------------------------------------------
+    // GET SELECTED CART ITEMS + CURRENT PRODUCT PRICES/STOCK
+    // ------------------------------------------------------------
+    final cartResult = await conn.execute(
+      '''
+      SELECT
+        c.id AS cartItemId,
+        c.productId,
+        c.quantity AS cartQuantity,
 
-    final Uint8List? imageBytes = await getUserProfileImage(userId);
+        p.price,
+        p.quantity AS stockQuantity,
+        p.discount
 
-    return User.fromRow(row, imageBlob: imageBytes);
-  }
+      FROM CartItems c
 
-  Future<bool> updateUserProfile({
-    required String userId,
-    required String fullName,
-    required String email,
-    String? address,
-  }) async {
-    final conn = await connection;
-    final result = await conn.execute(
-      "UPDATE Users SET "
-      "fullName = :fullName, "
-      "email = :email, "
-      "address = :address "
-      "WHERE id = :id",
-      {"id": userId, "fullName": fullName, "email": email, "address": address},
+      INNER JOIN Products p
+        ON p.id = c.productId
+
+      WHERE c.userId = :userId
+        AND c.id IN ($placeholders)
+      ''',
+      params,
     );
-    return result.affectedRows.toInt() > 0;
+
+    if (cartResult.rows.isEmpty) {
+      throw Exception(
+        'The selected cart items could not be found.',
+      );
+    }
+
+    // Make sure every selected cart item still exists.
+    if (cartResult.rows.length != cartItemIds.length) {
+      throw Exception(
+        'One or more selected cart items are no longer available.',
+      );
+    }
+
+    double subtotal = 0.0;
+    double totalDiscount = 0.0;
+
+    final orderItems = <Map<String, dynamic>>[];
+
+    // ------------------------------------------------------------
+    // VALIDATE STOCK + CALCULATE TOTALS
+    // ------------------------------------------------------------
+    for (final row in cartResult.rows) {
+      final data = row.assoc();
+
+      final cartItemId = data['cartItemId'] ?? '';
+      final productId = data['productId'] ?? '';
+
+      final quantity =
+          int.tryParse(data['cartQuantity'] ?? '0') ?? 0;
+
+      final stockQuantity =
+          int.tryParse(data['stockQuantity'] ?? '0') ?? 0;
+
+      final unitPrice =
+          double.tryParse(data['price'] ?? '0') ?? 0.0;
+
+      final discountPercentage =
+          double.tryParse(data['discount'] ?? '0') ?? 0.0;
+
+      if (quantity <= 0) {
+        throw Exception(
+          'Invalid quantity for product $productId.',
+        );
+      }
+
+      if (stockQuantity <= 0) {
+        throw Exception(
+          'One of the selected products is out of stock.',
+        );
+      }
+
+      if (quantity > stockQuantity) {
+        throw Exception(
+          'Only $stockQuantity item(s) remain in stock for one of your selected products.',
+        );
+      }
+
+      final itemSubtotal = unitPrice * quantity;
+
+      final itemDiscount =
+          itemSubtotal * (discountPercentage / 100);
+
+      final itemTotal =
+          itemSubtotal - itemDiscount;
+
+      subtotal += itemSubtotal;
+      totalDiscount += itemDiscount;
+
+      orderItems.add({
+        'cartItemId': cartItemId,
+        'productId': productId,
+        'quantity': quantity,
+        'unitPrice': unitPrice,
+        'discount': itemDiscount,
+        'totalPrice': itemTotal,
+      });
+    }
+
+    // ------------------------------------------------------------
+    // SHIPPING
+    // ------------------------------------------------------------
+    //
+    // Your current cart implementation uses a delivery fee of 0
+    // because the actual business rule has not been defined yet.
+    //
+    const double shippingFee = 0.0;
+
+    final totalAmount =
+        subtotal - totalDiscount + shippingFee;
+
+    // ------------------------------------------------------------
+    // GENERATE ORDER ID
+    // ------------------------------------------------------------
+    final uuidResult = await conn.execute(
+      'SELECT UUID() AS orderId',
+    );
+
+    if (uuidResult.rows.isEmpty) {
+      throw Exception('Unable to generate order ID.');
+    }
+
+    final orderId =
+        uuidResult.rows.first.assoc()['orderId'] ?? '';
+
+    if (orderId.isEmpty) {
+      throw Exception('Unable to generate order ID.');
+    }
+
+    // ------------------------------------------------------------
+    // CREATE ORDER
+    // ------------------------------------------------------------
+    await conn.execute(
+      '''
+      INSERT INTO Orders (
+        id,
+        userId,
+        status,
+        totalAmount,
+        subTotal,
+        discount,
+        shippingFee,
+        paymentMethod,
+        shippingAddress,
+        notes
+      )
+      VALUES (
+        :id,
+        :userId,
+        'pending',
+        :totalAmount,
+        :subTotal,
+        :discount,
+        :shippingFee,
+        :paymentMethod,
+        :shippingAddress,
+        :notes
+      )
+      ''',
+      {
+        'id': orderId,
+        'userId': userId,
+        'totalAmount': totalAmount,
+        'subTotal': subtotal,
+        'discount': totalDiscount,
+        'shippingFee': shippingFee,
+        'paymentMethod': paymentMethod,
+        'shippingAddress': shippingAddress,
+        'notes': notes,
+      },
+    );
+
+    // ------------------------------------------------------------
+    // CREATE ORDER ITEMS + REDUCE STOCK
+    // ------------------------------------------------------------
+    for (final item in orderItems) {
+      await conn.execute(
+        '''
+        INSERT INTO OrderItems (
+          id,
+          orderId,
+          productId,
+          quantity,
+          unitPrice,
+          discount,
+          totalPrice
+        )
+        VALUES (
+          UUID(),
+          :orderId,
+          :productId,
+          :quantity,
+          :unitPrice,
+          :discount,
+          :totalPrice
+        )
+        ''',
+        {
+          'orderId': orderId,
+          'productId': item['productId'],
+          'quantity': item['quantity'],
+          'unitPrice': item['unitPrice'],
+          'discount': item['discount'],
+          'totalPrice': item['totalPrice'],
+        },
+      );
+
+      // Re-check stock while reducing it.
+      final stockUpdate = await conn.execute(
+        '''
+        UPDATE Products
+        SET quantity = quantity - :quantity
+        WHERE id = :productId
+          AND quantity >= :quantity
+        ''',
+        {
+          'productId': item['productId'],
+          'quantity': item['quantity'],
+        },
+      );
+
+      if (stockUpdate.affectedRows.toInt() == 0) {
+        throw Exception(
+          'Stock changed while placing your order. Please try again.',
+        );
+      }
+    }
+
+    // ------------------------------------------------------------
+    // REMOVE ONLY PURCHASED CART ITEMS
+    // ------------------------------------------------------------
+    final deleteParams = <String, dynamic>{
+      'userId': userId,
+    };
+
+    for (int i = 0; i < cartItemIds.length; i++) {
+      deleteParams['deleteCartId$i'] = cartItemIds[i];
+    }
+
+    final deletePlaceholders = List.generate(
+      cartItemIds.length,
+      (index) => ':deleteCartId$index',
+    ).join(', ');
+
+    await conn.execute(
+      '''
+      DELETE FROM CartItems
+      WHERE userId = :userId
+        AND id IN ($deletePlaceholders)
+      ''',
+      deleteParams,
+    );
+
+    // ------------------------------------------------------------
+    // COMMIT
+    // ------------------------------------------------------------
+    await conn.execute('COMMIT');
+
+    return orderId;
+  } catch (e) {
+    // ------------------------------------------------------------
+    // ROLLBACK EVERYTHING
+    // ------------------------------------------------------------
+    try {
+      await conn.execute('ROLLBACK');
+    } catch (_) {
+      // Ignore rollback failure and preserve original exception.
+    }
+
+    throw Exception(
+      'Failed to place order: ${e.toString()}',
+    );
   }
+}
+
+Future<List<Map<String, String?>>> getUserOrders(String userId) async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      o.id,
+      o.status,
+      o.totalAmount,
+      o.subTotal,
+      o.discount,
+      o.shippingFee,
+      o.paymentMethod,
+      o.shippingAddress,
+      o.createdAt,
+      o.updatedAt,
+      COUNT(oi.id) AS itemsCount
+    FROM Orders o
+    LEFT JOIN OrderItems oi
+      ON oi.orderId = o.id
+    WHERE o.userId = :userId
+    GROUP BY
+      o.id,
+      o.status,
+      o.totalAmount,
+      o.subTotal,
+      o.discount,
+      o.shippingFee,
+      o.paymentMethod,
+      o.shippingAddress,
+      o.createdAt,
+      o.updatedAt
+    ORDER BY o.createdAt DESC
+    ''',
+    {'userId': userId},
+  );
+
+  return result.rows.map((row) => row.assoc()).toList();
+}
+
 }

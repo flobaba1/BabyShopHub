@@ -20,7 +20,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   // ============================================================
   // GET CURRENT USER ID
   // ============================================================
-  String? get _userId => UserSession.instance.userId;
+  String? get _userId => UserSession.loggedUser?.id;
 
   @override
   void initState() {
@@ -248,7 +248,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   // LOGOUT
   // ============================================================
   void _logout() {
-    UserSession.instance.logout();
+    UserSession.logout();
     context.go('/login');
   }
 

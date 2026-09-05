@@ -4,15 +4,22 @@ import 'package:baby_shop_hub/core/router.dart';
 import 'package:baby_shop_hub/core/onboarding_service.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'dart:developer';
-
+import 'package:baby_shop_hub/core/user_session.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 1. Read first-time status before building the UI
   final bool isFirstTime = await OnboardingService.isFirstTimeUser();
-
+  String initialRoute = "";
   // 2. Pass the initial route dynamically
-  final String initialRoute = isFirstTime ? '/onboarding' : '/login';
+  if (isFirstTime) {
+    initialRoute = '/onboarding';
+  } else if (await UserSession.isLoggedIn()) {
+    await UserSession.loadUserSession(); // Load user session data
+    initialRoute = '/home';
+  } else {
+    initialRoute = '/login';
+  }
 
   runApp(BabyShopApp(initialRoute: initialRoute));
 
