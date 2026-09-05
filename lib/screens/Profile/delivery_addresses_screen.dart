@@ -43,7 +43,7 @@ class DeliveryAddressesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // FIXED: Renders exactly ONE single primary delivery address box container card
+            // FIXED: Renders exactly ONE single primary delivery address box container card cleanly
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -57,51 +57,6 @@ class DeliveryAddressesScreen extends StatelessWidget {
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
-                ),
-                icon: const Icon(Icons.add, color: Colors.orange, size: 20),
-                label: const Text(
-                  'Add New Address',
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddressCard({
-    required String title,
-    required bool isDefault,
-    required String address,
-    required VoidCallback onEdit,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E1E24),
-                ),
                 ],
               ),
               child: Column(
@@ -197,6 +152,46 @@ class DeliveryAddressesScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // FIXED: Repaired the broken helper function structure down here
+  Widget _buildAddressCard({
+    required String title,
+    required bool isDefault,
+    required String address,
+    required VoidCallback onEdit,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E1E24),
+                ),
+              ),
+              if (isDefault)
+                const Icon(Icons.check_circle, color: Colors.orange),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(address),
+        ],
       ),
     );
   }

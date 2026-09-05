@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:baby_shop_hub/core/mysql_service.dart';
 import 'package:baby_shop_hub/core/user_session.dart';
@@ -22,108 +23,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final MySQLService _mysqlService = MySQLService();
   final UserSession _userSession = UserSession.instance;
 
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.grey.withValues(alpha: 0.06)),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildMenuTile(
-                          icon: Icons.person_outline_rounded,
-                          title: 'Personal Information',
-                          subtitle: 'Edit your profile details',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const PersonalInformationScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildDivider(),
-                        _buildMenuTile(
-                          icon: Icons.location_on_outlined,
-                          title: 'Delivery Addresses',
-                          subtitle: 'Manage saved addresses',
-                          onTap: () {
-                            // ACTUAL ROUTE LINKED: Opens DeliveryAddressesScreen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const DeliveryAddressesScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildDivider(),
-                        _buildMenuTile(
-                          icon: Icons.credit_card_outlined,
-                          title: 'Payment Methods',
-                          subtitle: 'Cards & payment options',
-                          onTap: () {
-                            // ACTUAL ROUTE LINKED: Opens PaymentMethodsScreen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const PaymentMethodsScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildDivider(),
-                        _buildMenuTile(
-                          icon: Icons.card_giftcard_outlined,
-                          title: 'My Wishlist',
-                          subtitle: 'Saved favorite products',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MyWishlistScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildDivider(),
-                        _buildMenuTile(
-                          icon: Icons.shield_outlined,
-                          title: 'Privacy & Security',
-                          subtitle: 'Password & account security',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const PrivacySecurityScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildDivider(),
-                        _buildMenuTile(
-                          icon: Icons.settings_outlined,
-                          title: 'App Settings',
-                          subtitle: 'Language, theme & more',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AppSettingsScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
   User? _user;
   bool _isLoading = true;
 
@@ -133,14 +32,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
-  
+  // ============================================================
   // LOAD CURRENT USER
-  
+  // ============================================================
 
   Future<void> _loadUser() async {
     final String? userId = _userSession.userId;
 
-    if (userId == null) {
+    if (userId == null || userId.isEmpty) {
       if (!mounted) return;
 
       setState(() {
@@ -169,7 +68,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Unable to load profile: ${e.toString().replaceFirst('Exception: ', '')}',
+            'Unable to load profile: '
+            '${e.toString().replaceFirst('Exception: ', '')}',
           ),
         ),
       );
@@ -188,12 +88,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    // Reload profile when coming back.
+    // Reload profile when returning.
     await _loadUser();
   }
 
   // ============================================================
-  // PROFILE IMAGE
+  // PROFILE AVATAR
   // ============================================================
 
   Widget _buildProfileAvatar() {
@@ -224,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: 72,
       height: 72,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Center(
@@ -279,6 +179,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Container(
       width: double.infinity,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 20,
+        bottom: 24,
+        left: 24,
+        right: 24,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFFFFB300), Color(0xFFFF6D00)],
@@ -287,44 +193,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 20,
-        bottom: 24,
-        left: 24,
-        right: 24,
-      ),
       child: Column(
         children: [
           Row(
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Center(
-                  child: Text(
-                    'E',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              // --------------------------------------------------
-              // PROFILE IMAGE
-              // --------------------------------------------------
               _buildProfileAvatar(),
 
               const SizedBox(width: 16),
 
-              // --------------------------------------------------
-              // NAME + EMAIL
-              // --------------------------------------------------
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,9 +239,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: Colors.white.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Icon(Icons.star, color: Colors.white, size: 12),
                           SizedBox(width: 4),
                           Text(
@@ -383,9 +259,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
-              // --------------------------------------------------
-              // EDIT BUTTON
-              // --------------------------------------------------
               IconButton(
                 icon: const Icon(
                   Icons.edit_square,
@@ -399,9 +272,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 28),
 
-          // ------------------------------------------------------
+          // ======================================================
           // STATS
-          // ------------------------------------------------------
+          // ======================================================
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
@@ -428,6 +301,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ============================================================
+  // STAT COLUMN
+  // ============================================================
+
   Widget _buildStatColumn(String count, String label) {
     return Column(
       children: [
@@ -439,7 +316,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: Color(0xFF1E1E24),
           ),
         ),
+
         const SizedBox(height: 2),
+
         Text(
           label,
           style: const TextStyle(
@@ -493,7 +372,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: Color(0xFF1E1E24),
                   ),
                 ),
+
                 SizedBox(height: 2),
+
                 Text(
                   'Order updates & offers',
                   style: TextStyle(color: Colors.grey, fontSize: 12),
@@ -502,14 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
-          Switch(
-            value: true,
-            onChanged: (val) {},
-            activeThumbColor: Colors.orange,
-            activeTrackColor: Colors.orange.withValues(alpha: 0.3),
-            activeColor: Colors.orange,
-            activeTrackColor: Colors.orangeAccent,
-          ),
+          Switch(value: true, onChanged: null),
         ],
       ),
     );
@@ -534,6 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: Icon(icon, color: Colors.orange, size: 22),
       ),
+
       title: Text(
         title,
         style: const TextStyle(
@@ -542,15 +417,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: Color(0xFF1E1E24),
         ),
       ),
+
       subtitle: Text(
         subtitle,
         style: const TextStyle(color: Colors.grey, fontSize: 12),
       ),
+
       trailing: const Icon(
         Icons.arrow_forward_ios_rounded,
         size: 14,
         color: Colors.grey,
       ),
+
       onTap: onTap,
     );
   }
@@ -579,6 +457,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             size: 22,
           ),
         ),
+
         title: const Text(
           'Admin Panel',
           style: TextStyle(
@@ -587,21 +466,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: Colors.purple,
           ),
         ),
+
         subtitle: const Text(
           'Manage products, orders & users',
           style: TextStyle(color: Colors.purple, fontSize: 12),
         ),
+
         trailing: const Icon(
           Icons.arrow_forward_ios_rounded,
           size: 14,
           color: Colors.purple,
         ),
-        onTap: () {},
+
+        onTap: () {
+          // Admin navigation can be connected here later.
+        },
       ),
     );
   }
 
-  //
+  // ============================================================
   // SIGN OUT
   // ============================================================
 
@@ -622,6 +506,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
+
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context, true);
@@ -641,13 +526,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    _userSession.logout();
+    await UserSession.logout();
 
     if (!mounted) return;
 
-    // Go back to login.
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    // Go back to login using GoRouter.
+    context.go('/login');
   }
+
+  // ============================================================
+  // SIGN OUT BUTTON
+  // ============================================================
 
   Widget _buildSignOutButton() {
     return SizedBox(
@@ -678,20 +567,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ============================================================
+  // DIVIDER
+  // ============================================================
+
   Widget _buildDivider() {
     return Padding(
-      padding: const EdgeInsets.only(left: 70.0, right: 14),
-      child: Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+      padding: const EdgeInsets.only(left: 70, right: 14),
+      child: Divider(height: 1, color: Colors.grey.withValues(alpha: 0.1)),
     );
   }
 
+  // ============================================================
   // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F4),
-
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -701,29 +595,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // ------------------------------------------------
+                  // ==================================================
                   // NOTIFICATIONS
-                  // ------------------------------------------------
+                  // ==================================================
                   _buildNotificationTile(),
 
                   const SizedBox(height: 16),
 
-                  // ------------------------------------------------
+                  // ==================================================
                   // PROFILE MENU
-                  // ------------------------------------------------
+                  // ==================================================
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.grey.withOpacity(0.06)),
+                      border: Border.all(
+                        color: Colors.grey.withValues(alpha: 0.06),
+                      ),
                     ),
                     child: Column(
                       children: [
-                        // Personal Information
                         _buildMenuTile(
                           icon: Icons.person_outline_rounded,
                           title: 'Personal Information',
@@ -733,7 +628,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildDivider(),
 
-                        // Delivery Addresses
                         _buildMenuTile(
                           icon: Icons.location_on_outlined,
                           title: 'Delivery Addresses',
@@ -751,7 +645,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildDivider(),
 
-                        // Payment Methods
                         _buildMenuTile(
                           icon: Icons.credit_card_outlined,
                           title: 'Payment Methods',
@@ -769,7 +662,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildDivider(),
 
-                        // Wishlist
                         _buildMenuTile(
                           icon: Icons.card_giftcard_outlined,
                           title: 'My Wishlist',
@@ -786,7 +678,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildDivider(),
 
-                        // Privacy & Security
                         _buildMenuTile(
                           icon: Icons.shield_outlined,
                           title: 'Privacy & Security',
@@ -804,7 +695,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildDivider(),
 
-                        // App Settings
                         _buildMenuTile(
                           icon: Icons.settings_outlined,
                           title: 'App Settings',
@@ -824,14 +714,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 16),
 
+                  // ==================================================
                   // ADMIN PANEL
+                  // ==================================================
                   _buildAdminPanelTile(),
 
                   const SizedBox(height: 16),
 
-                  // ------------------------------------------------
+                  // ==================================================
                   // SIGN OUT
-                  // ------------------------------------------------
+                  // ==================================================
                   _buildSignOutButton(),
 
                   const SizedBox(height: 40),
