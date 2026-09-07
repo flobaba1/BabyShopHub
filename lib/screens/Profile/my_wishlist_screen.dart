@@ -14,7 +14,8 @@ class _MyWishlistScreenState extends State<MyWishlistScreen> {
   final MySQLService _mysqlService = MySQLService();
   final UserSession _userSession = UserSession.instance;
 
-  List<Map<String, String>> _wishlistItems = [];
+  List<Map<String, dynamic>> _wishlistItems = [];
+
   bool _isLoading = true;
 
   @override
