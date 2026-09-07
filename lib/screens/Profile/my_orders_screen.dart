@@ -59,19 +59,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
   }
 
-// ...existing code...
+  // ...existing code...
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'processing':
         return const Color(0xFFE65100);
-
       case 'shipped':
         return const Color(0xFF7B1FA2);
-
       case 'delivered':
         return const Color(0xFF2E7D32);
-
       case 'pending':
       default:
         return const Color(0xFF1565C0);
@@ -82,13 +79,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     switch (status.toLowerCase()) {
       case 'processing':
         return const Color(0xFFFFF3E0);
-
       case 'shipped':
         return const Color(0xFFF3E5F5);
-
       case 'delivered':
         return const Color(0xFFE8F5E9);
-
       case 'pending':
       default:
         return const Color(0xFFE3F2FD);
@@ -97,7 +91,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
   String _formatStatus(String status) {
     if (status.isEmpty) return 'Pending';
-
     return status[0].toUpperCase() + status.substring(1).toLowerCase();
   }
 
@@ -137,23 +130,45 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     return amount.toStringAsFixed(2);
   }
 
+  /// Extracts product image URLs from the order map.
+  /// Supports common keys returned by the backend (comma-separated or single).
+  List<String> _getOrderImageUrls(Map<String, String?> order) {
+    // Prefer a list of images (comma-separated)
+    final images =
+        order['images'] ?? order['imageUrls'] ?? order['productImages'];
+    if (images != null && images.isNotEmpty) {
+      return images
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
+    // Fallback to a single image field
+    final single =
+        order['image'] ??
+        order['imageUrl'] ??
+        order['productImage'] ??
+        order['thumbnail'];
+    if (single != null && single.isNotEmpty) {
+      return [single];
+    }
+
+    return [];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F4),
-
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black87,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -171,28 +186,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    '📦',
-                    style: TextStyle(fontSize: 24),
-                  ),
+                  const Text('📦', style: TextStyle(fontSize: 24)),
                 ],
               ),
-
               const SizedBox(height: 4),
-
               Text(
                 '${_orders.length} total orders',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
-
               const SizedBox(height: 20),
-
-              Expanded(
-                child: _buildBody(),
-              ),
+              Expanded(child: _buildBody()),
             ],
           ),
         ),
@@ -203,9 +206,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: Colors.orange,
-        ),
+        child: CircularProgressIndicator(color: Colors.orange),
       );
     }
 
@@ -214,19 +215,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 50,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.error_outline, size: 50, color: Colors.grey),
             const SizedBox(height: 12),
             Text(
               _errorMessage!,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 15,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 15),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -235,7 +229,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   _isLoading = true;
                   _errorMessage = null;
                 });
-
                 _loadOrders();
               },
               child: const Text('Try Again'),
@@ -263,9 +256,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 color: Colors.orange,
               ),
             ),
-
             const SizedBox(height: 18),
-
             const Text(
               'No orders yet',
               style: TextStyle(
@@ -274,16 +265,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 color: Color(0xFF1E1E24),
               ),
             ),
-
             const SizedBox(height: 6),
-
             const Text(
               'Your completed orders will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
           ],
         ),
@@ -300,74 +286,58 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         itemCount: _orders.length,
         itemBuilder: (context, index) {
           final order = _orders[index];
-
-          return _buildOrderCard(
-            context,
-            order,
-          );
+          return _buildOrderCard(context, order);
         },
       ),
     );
   }
 
-  Widget _buildOrderCard(
-    BuildContext context,
-    Map<String, String?> order,
-  ) {
+  Widget _buildOrderCard(BuildContext context, Map<String, String?> order) {
     final status = order['status'] ?? 'pending';
-
     final statusColor = _getStatusColor(status);
     final statusBg = _getStatusBackground(status);
 
-    final itemsCount =
-        int.tryParse(order['itemsCount'] ?? '0') ?? 0;
-
+    final itemsCount = int.tryParse(order['itemsCount'] ?? '0') ?? 0;
     final total = _formatPrice(order['totalAmount']);
+    final imageUrls = _getOrderImageUrls(order);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.12),
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            spreadRadius: 1,
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Date + Order ID + Status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatDate(order['createdAt']),
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDate(order['createdAt']),
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  SizedBox(
-                    width: 170,
-                    child: Text(
-                      'Order #${order['id']}',
+                    const SizedBox(height: 4),
+                    Text(
+                      order['id'] ?? '',
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 16,
@@ -375,38 +345,35 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         color: Color(0xFF1E1E24),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 10,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: statusBg,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 6,
-                      height: 6,
+                      width: 7,
+                      height: 7,
                       decoration: BoxDecoration(
                         color: statusColor,
                         shape: BoxShape.circle,
                       ),
                     ),
-
                     const SizedBox(width: 6),
-
                     Text(
                       _formatStatus(status),
                       style: TextStyle(
                         color: statusColor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
                     ),
@@ -416,36 +383,87 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          Container(
-            height: 64,
-            width: 64,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF3EE),
-              borderRadius: BorderRadius.circular(16),
+          // Product images (from the order)
+          if (imageUrls.isNotEmpty)
+            SizedBox(
+              height: 60,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: imageUrls.length > 3 ? 3 : imageUrls.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrls[index],
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 60,
+                        height: 60,
+                        color: const Color(0xFFFFF3EE),
+                        child: const Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.orange,
+                          size: 24,
+                        ),
+                      ),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          color: const Color(0xFFFFF3EE),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            )
+          else
+            // Fallback when no image URLs are available
+            Container(
+              height: 60,
+              width: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3EE),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.shopping_bag_outlined,
+                color: Colors.orange,
+                size: 28,
+              ),
             ),
-            child: const Icon(
-              Icons.shopping_bag_outlined,
-              color: Colors.orange,
-              size: 28,
-            ),
-          ),
 
           const SizedBox(height: 16),
 
+          // Items count + price + Track Order
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$itemsCount ${itemsCount == 1 ? 'item' : 'items'} · ₦$total',
+                '$itemsCount items · \$$total',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Colors.black54,
                 ),
               ),
-
               TextButton.icon(
                 onPressed: () {
                   Navigator.push(

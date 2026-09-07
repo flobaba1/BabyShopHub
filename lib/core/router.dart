@@ -25,11 +25,10 @@ import 'package:baby_shop_hub/screens/app/homescreen/homescreen.dart';
 import 'package:baby_shop_hub/screens/app/categories/categories.dart';
 import 'package:baby_shop_hub/screens/app/cart/cart.dart';
 
-// ==============================
 // PRODUCTS
-// ==============================
 import 'package:baby_shop_hub/screens/app/products/all_products.dart';
 import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
+import 'package:baby_shop_hub/screens/app/products/search_products.dart';
 
 // ==============================
 // CHECKOUT
@@ -145,6 +144,12 @@ GoRouter createRouter(String initialRoute) {
         path: '/products/filter',
         builder: (context, state) {
           return const FilteredProductsScreen();
+        },
+      ),
+      GoRoute(
+        path: '/products/search',
+        builder: (context, state) {
+          return const SearchScreen();
         },
       ),
 

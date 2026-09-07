@@ -1,9 +1,7 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../screens/app/products/product_details.dart';
 import '../models/product.dart';
-import '../../core/mysql_service.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -48,7 +46,9 @@ class ProductCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ============================================================
                   // BRAND
+                  // ============================================================
                   if (product.brand != null && product.brand!.trim().isNotEmpty)
                     Text(
                       product.brand!,
@@ -64,7 +64,9 @@ class ProductCard extends StatelessWidget {
                   if (product.brand != null && product.brand!.trim().isNotEmpty)
                     const SizedBox(height: 3),
 
+                  // ============================================================
                   // PRODUCT NAME
+                  // ============================================================
                   Text(
                     product.name,
                     maxLines: 2,
@@ -79,7 +81,9 @@ class ProductCard extends StatelessWidget {
 
                   const SizedBox(height: 5),
 
+                  // ============================================================
                   // RATING
+                  // ============================================================
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -102,7 +106,9 @@ class ProductCard extends StatelessWidget {
 
                   const SizedBox(height: 6),
 
+                  // ============================================================
                   // PRICE + ADD BUTTON
+                  // ============================================================
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -137,7 +143,9 @@ class ProductCard extends StatelessWidget {
 
                   const SizedBox(height: 4),
 
+                  // ============================================================
                   // STOCK
+                  // ============================================================
                   Text(
                     product.quantity > 0
                         ? '${product.quantity} in stock'
@@ -181,49 +189,14 @@ class _ProductImage extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          FutureBuilder<Uint8List?>(
-            future: MySQLService().getProductImage(product.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Container(
-                  color: const Color(0xFFF6F6F6),
-                  child: const Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFFFF6600),
-                      ),
-                    ),
-                  ),
-                );
-              }
+          // ============================================================
+          // PRODUCT IMAGE
+          // ============================================================
+          _buildImage(),
 
-              if (snapshot.hasError ||
-                  snapshot.data == null ||
-                  snapshot.data!.isEmpty) {
-                return Container(
-                  color: const Color(0xFFF6F6F6),
-                  child: const Center(
-                    child: Icon(
-                      Icons.image_not_supported_outlined,
-                      size: 35,
-                      color: Color(0xFFB8BDC6),
-                    ),
-                  ),
-                );
-              }
-
-              return Image.memory(
-                snapshot.data!,
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
-              );
-            },
-          ),
-
+          // ============================================================
           // BADGE
+          // ============================================================
           if (product.badge != null && product.badge!.trim().isNotEmpty)
             Positioned(
               top: 7,
@@ -245,7 +218,9 @@ class _ProductImage extends StatelessWidget {
               ),
             ),
 
+          // ============================================================
           // DISCOUNT
+          // ============================================================
           if (product.discount > 0)
             Positioned(
               right: 7,
@@ -267,7 +242,9 @@ class _ProductImage extends StatelessWidget {
               ),
             ),
 
+          // ============================================================
           // FAVORITE
+          // ============================================================
           Positioned(
             top: 7,
             right: 7,
@@ -289,6 +266,59 @@ class _ProductImage extends StatelessWidget {
       ),
     );
   }
+
+  // ============================================================
+  // BUILD IMAGE FROM product.image
+  // ============================================================
+
+  Widget _buildImage() {
+    final image = product.image;
+
+    // No image
+    if (image == null || image.isEmpty) {
+      return Container(
+        color: const Color(0xFFF6F6F6),
+        child: const Center(
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            size: 35,
+            color: Color(0xFFB8BDC6),
+          ),
+        ),
+      );
+    }
+
+    // Image already loaded inside Product
+    return Image.memory(
+      image,
+      fit: BoxFit.cover,
+
+      // The card is only 125px high.
+      // This prevents Flutter from decoding the full-size
+      // 1MB+ image when it doesn't need to.
+      cacheWidth: 300,
+      cacheHeight: 300,
+
+      gaplessPlayback: true,
+
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: const Color(0xFFF6F6F6),
+          child: const Center(
+            child: Icon(
+              Icons.broken_image_outlined,
+              size: 35,
+              color: Color(0xFFB8BDC6),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // BADGE COLOR
+  // ============================================================
 
   Color _badgeColor(String badge) {
     final value = badge.toLowerCase();
