@@ -87,6 +87,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (updatedUser is User && mounted) {
       setState(() {
         _user = updatedUser;
+        _user!.metadata['orderCount'] = 3;
+        _user!.metadata['wishlistCount'] = 12;
+        _user!.metadata['reviewCount'] = 5;
       });
     } else {
       await _loadUser();
@@ -276,6 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // ======================================================
           // STATS
           // ======================================================
+          // Find this row inside _buildProfileHeader and replace the old stats blocks:
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
@@ -285,15 +289,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatColumn('3', 'Orders'),
-
+                _buildStatColumn(
+                  _user?.metadata['orderCount']?.toString() ?? '0',
+                  'Orders',
+                ),
                 Container(width: 1, height: 30, color: Colors.grey.shade200),
-
-                _buildStatColumn('12', 'Wishlist'),
-
+                _buildStatColumn(
+                  _user?.metadata['wishlistCount']?.toString() ?? '0',
+                  'Wishlist',
+                ),
                 Container(width: 1, height: 30, color: Colors.grey.shade200),
-
-                _buildStatColumn('5', 'Reviews'),
+                _buildStatColumn(
+                  _user?.metadata['reviewCount']?.toString() ?? '0',
+                  'Reviews',
+                ),
               ],
             ),
           ),
@@ -599,16 +608,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // ==================================================
+                  
                   // NOTIFICATIONS
-                  // ==================================================
+                
                   _buildNotificationTile(),
 
                   const SizedBox(height: 16),
 
-                  // ==================================================
+                 
                   // PROFILE MENU
-                  // ==================================================
+                 
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(

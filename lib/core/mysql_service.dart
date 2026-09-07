@@ -108,10 +108,10 @@ class MySQLService {
 
     List<User> users = [];
     for (final row in results.rows) {
-  final Map<String, String?> rowMap = row.assoc(); // 👈 Change String? to dynamic
-  users.add(User.fromRow(rowMap));
-}
-
+      final Map<String, String?> rowMap = row
+          .assoc(); // 👈 Change String? to dynamic
+      users.add(User.fromRow(rowMap));
+    }
 
     return users;
   }
