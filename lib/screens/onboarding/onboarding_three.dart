@@ -108,24 +108,24 @@ class FastSafeDeliveryScreen extends StatelessWidget {
               const SizedBox(height: 17),
 
               // Sign in link.
-              GestureDetector(
-                onTap: () => _finishOnboarding(context),
-                child: RichText(
-                  text: const TextSpan(
-                    style: TextStyle(fontSize: 12, color: Color(0xFF9AA3B2)),
-                    children: [
-                      TextSpan(text: 'Already have an account? '),
-                      TextSpan(
-                        text: 'Sign In',
-                        style: TextStyle(
-                          color: Color(0xFFFF6800),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // GestureDetector(
+              //   onTap: () => _finishOnboarding(context),
+              //   child: RichText(
+              //     text: const TextSpan(
+              //       style: TextStyle(fontSize: 12, color: Color(0xFF9AA3B2)),
+              //       children: [
+              //         TextSpan(text: 'Already have an account? '),
+              //         TextSpan(
+              //           text: 'Sign In',
+              //           style: TextStyle(
+              //             color: Color(0xFFFF6800),
+              //             fontWeight: FontWeight.w600,
+              //           ),
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
