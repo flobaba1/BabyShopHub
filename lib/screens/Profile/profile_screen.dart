@@ -12,6 +12,7 @@ import 'my_wishlist_screen.dart';
 import 'privacy_security_screen.dart';
 import 'app_settings_screen.dart';
 import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart';
+import 'feedback_and_support_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -490,10 +491,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
 
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
-          );
+          // Admin navigation can be connected here later.
         },
       ),
     );
@@ -612,16 +610,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  
                   // NOTIFICATIONS
-                
                   _buildNotificationTile(),
 
                   const SizedBox(height: 16),
 
-                 
                   // PROFILE MENU
-                 
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
@@ -722,6 +716,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             );
                           },
                         ),
+                        _buildDivider(),
+
+                        _buildMenuTile(
+                          icon: Icons.support_agent_outlined,
+                          title: 'Feedback & Support',
+                          subtitle: 'Get help or send us feedback',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const FeedbackAndSupportScreen(),
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -731,10 +741,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ==================================================
                   // ADMIN PANEL
                   // ==================================================
-                  if (_user?.isAdmin == true) ...[
-                    _buildAdminPanelTile(),
-                    const SizedBox(height: 16),
-                  ],
+                  _buildAdminPanelTile(),
+
+                  const SizedBox(height: 16),
+
                   // ==================================================
                   // SIGN OUT
                   // ==================================================
