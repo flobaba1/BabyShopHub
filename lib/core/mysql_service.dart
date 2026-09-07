@@ -830,10 +830,9 @@ class MySQLService {
   }
 
   Future<List<Product>> getProducts() async {
-  final conn = await connection;
+    final conn = await connection;
 
-  final result = await conn.execute(
-    '''
+    final result = await conn.execute('''
     SELECT
       p.id,
       p.name,
@@ -850,11 +849,10 @@ class MySQLService {
     FROM Products p
     LEFT JOIN Categories c ON c.id = p.categoryId
     ORDER BY p.createdAt DESC
-    ''',
-  );
+    ''');
 
-  return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
-}
+    return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
+  }
 
   Future<List<Category>> fetchCategories() async {
     final conn = await connection;
@@ -1188,9 +1186,7 @@ class MySQLService {
       WHERE pr.productId = :productId
       ORDER BY pr.createdAt DESC
       ''',
-      {
-        'productId': productId,
-      },
+      {'productId': productId},
     );
 
     return result.rows.map((row) {
@@ -2364,4 +2360,20 @@ Future<void> updateSupportRequestStatus({
     _idleTimer?.cancel();
     await _closeConnection();
   }
+  // ===========================================================================
+  // PROFILE COUNTER METRICS
+
+  /// Counts total orders placed by this specific user
+  Future<int> getUserOrderCount(String userId) async {
+    final conn = await connection;
+    final result = await conn.execute(
+      "SELECT COUNT(*) AS total FROM Orders WHERE userId = :userId",
+      {"userId": userId},
+    );
+    return int.tryParse(
+          result.rows.first.assoc()['total']?.toString() ?? '0',
+        ) ??
+        0;
+  }
+
 }
