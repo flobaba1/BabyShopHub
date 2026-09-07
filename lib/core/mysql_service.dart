@@ -1,4 +1,4 @@
-import 'package:mysql_client/mysql_client.dart';
+
 import 'package:baby_shop_hub/utilities/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/utilities/models/user.dart';
@@ -13,7 +13,8 @@ import 'package:baby_shop_hub/utilities/widgets/dashboard_widgets.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:convert';
-
+import 'dart:math' as math;
+import 'package:mysql_dart/mysql_dart.dart';
 import 'package:baby_shop_hub/env/env.dart';
 import 'dart:developer';
 
@@ -29,23 +30,37 @@ class MySQLService {
 
   Future<MySQLConnection> get connection async {
     _idleTimer?.cancel();
-    _idleTimer = Timer(_timeoutDuration, _closeConnection);
+
+    _idleTimer = Timer(
+      _timeoutDuration,
+      _closeConnection,
+    );
 
     if (_connection != null && _connection!.connected) {
       return _connection!;
     }
 
-    _connection = await MySQLConnection.createConnection(
-      host: Env.mysqlHost,
-      port: Env.mysqlPort,
-      userName: Env.mysqlUser,
-      password: Env.mysqlPassword,
-      databaseName: Env.mysqlDatabase,
-    );
+    try {
+      _connection = await MySQLConnection.createConnection(
+        host: Env.mysqlHost,
+        port: Env.mysqlPort,
+        userName: Env.mysqlUser,
+        password: Env.mysqlPassword,
+        databaseName: Env.mysqlDatabase,
+      );
 
-    await _connection!.connect();
-    log("MySQL connection established successfully.");
-    return _connection!;
+      await _connection!.connect();
+
+      log('MySQL connection established successfully.');
+
+      return _connection!;
+    } catch (e) {
+      _connection = null;
+
+      log('Failed to establish MySQL connection: $e');
+
+      rethrow;
+    }
   }
 
   // ===========================================================================
@@ -108,11 +123,110 @@ class MySQLService {
 
     List<User> users = [];
     for (final row in results.rows) {
-      final Map<String, String?> rowMap = row.assoc();
+      final Map<String, dynamic> rowMap = row.assoc();
       users.add(User.fromRow(rowMap));
     }
 
     return users;
+  }
+
+  Future<List<Map<String, dynamic>>> getOrderItems(String orderId) async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      oi.id,
+      oi.productId,
+      oi.quantity,
+      oi.unitPrice,
+      oi.discount,
+      oi.totalPrice,
+      p.name,
+      p.brand,
+      p.image
+    FROM OrderItems oi
+    INNER JOIN Products p
+      ON oi.productId = p.id
+    WHERE oi.orderId = :orderId
+    ORDER BY oi.createdAt ASC
+    ''',
+    {
+      'orderId': orderId,
+    },
+  );
+
+  final items = <Map<String, dynamic>>[];
+
+  for (final row in result.rows) {
+    final data = row.assoc();
+
+    Uint8List? imageBytes;
+
+    try {
+      imageBytes = row.typedColByName<Uint8List>('image');
+    } catch (_) {
+      imageBytes = _convertImageToBytes(data['image']);
+    }
+
+    items.add({
+      ...data,
+      'imageBytes': imageBytes,
+    });
+  }
+
+  return items;
+}
+
+  Uint8List? _convertImageToBytes(dynamic rawImage) {
+    if (rawImage == null) {
+      return null;
+    }
+
+    // Database already returns Uint8List
+    if (rawImage is Uint8List) {
+      return rawImage;
+    }
+
+    // Database returns List<int>
+    if (rawImage is List<int>) {
+      return Uint8List.fromList(rawImage);
+    }
+
+    // Database returns String
+    if (rawImage is String) {
+      final text = rawImage.trim();
+
+      // String representation of List<int>
+      if (text.startsWith('[') && text.endsWith(']')) {
+        try {
+          final cleaned = text.substring(1, text.length - 1);
+
+          final bytes = cleaned
+              .split(',')
+              .where((value) => value.trim().isNotEmpty)
+              .map((value) => int.parse(value.trim()))
+              .toList();
+
+          return Uint8List.fromList(bytes);
+        } catch (e) {
+          debugPrint('Failed to convert image list: $e');
+          return null;
+        }
+      }
+
+      // Base64 string
+      try {
+        return base64Decode(text);
+      } catch (e) {
+        debugPrint('Failed to decode base64 image: $e');
+        return null;
+      }
+    }
+
+    debugPrint('Unsupported image type: ${rawImage.runtimeType}');
+
+    return null;
   }
 
   // Fetch recent 5 orders from MySQL
@@ -339,7 +453,7 @@ class MySQLService {
         icon: Icons.trending_up_rounded,
         iconColor: const Color(0xFF16A34A),
         iconBg: const Color(0xFFDCFCE7),
-        value: '\$${totalRevenue.toStringAsFixed(0)}',
+        value: '\₦${totalRevenue.toStringAsFixed(0)}',
         label: 'Revenue',
         subtext: 'Total revenue',
       ),
@@ -422,18 +536,25 @@ class MySQLService {
   }
 
   Future<Uint8List?> getUserProfileImage(String userId) async {
-    final conn = await connection;
+  final conn = await connection;
 
-    final result = await conn.execute(
-      "SELECT image FROM Users WHERE id = :id",
-      {"id": userId},
-    );
+  final result = await conn.execute(
+    'SELECT image FROM Users WHERE id = :id',
+    {'id': userId},
+  );
 
-    if (result.rows.isEmpty) return null;
-
-    final row = result.rows.first;
-    return row.colAt(0) as Uint8List?;
+  if (result.rows.isEmpty) {
+    return null;
   }
+
+  final row = result.rows.first;
+
+  try {
+    return row.typedColByName<Uint8List>('image');
+  } catch (e) {
+    return _convertImageToBytes(row.colByName('image'));
+  }
+}
 
   // ============================================================
   // CART ITEMS CRUD
@@ -689,61 +810,29 @@ class MySQLService {
   }
 
   Future<Uint8List?> getProductImage(String productId) async {
-    final conn = await connection;
+  final conn = await connection;
 
-    final result = await conn.execute(
-      "SELECT image FROM Products WHERE id = :id",
-      {"id": productId},
-    );
+  final result = await conn.execute(
+    'SELECT image FROM Products WHERE id = :id',
+    {'id': productId},
+  );
 
-    if (result.rows.isEmpty) {
-      return null;
-    }
-
-    final dynamic rawImage = result.rows.first.colAt(0);
-
-    if (rawImage == null) {
-      return null;
-    }
-
-    // If database already returns real binary bytes
-    if (rawImage is Uint8List) {
-      return rawImage;
-    }
-
-    // If database returns List<int>
-    if (rawImage is List<int>) {
-      return Uint8List.fromList(rawImage);
-    }
-
-    if (rawImage is String) {
-      final text = rawImage.trim();
-
-      if (text.startsWith('[') && text.endsWith(']')) {
-        try {
-          final cleaned = text.substring(1, text.length - 1);
-
-          final bytes = cleaned
-              .split(',')
-              .map((value) => int.parse(value.trim()))
-              .toList();
-
-          return Uint8List.fromList(bytes);
-        } catch (e) {
-          log("Failed to convert image list: $e");
-          return null;
-        }
-      }
-
-      try {
-        return base64Decode(text);
-      } catch (_) {
-        return null;
-      }
-    }
-
+  if (result.rows.isEmpty) {
     return null;
   }
+
+  final row = result.rows.first;
+
+  try {
+    return row.typedColByName<Uint8List>('image');
+  } catch (e) {
+    log('Failed to retrieve product image: $e');
+
+    // Fallback for data that may have previously been stored
+    // as a string/base64 representation.
+    return _convertImageToBytes(row.colByName('image'));
+  }
+}
 
   Future<List<Product>> fetchProductsPaginated({
     required int offset,
@@ -788,7 +877,6 @@ class MySQLService {
     double? rating,
     double? discount,
     String? description,
-    Uint8List? imageBytes,
   }) async {
     final conn = await connection;
 
@@ -1374,18 +1462,46 @@ class MySQLService {
       // ------------------------------------------------------------
       // GENERATE ORDER ID
       // ------------------------------------------------------------
-      final uuidResult = await conn.execute('SELECT UUID() AS orderId');
+      // final uuidResult = await conn.execute('SELECT UUID() AS orderId');
 
-      if (uuidResult.rows.isEmpty) {
-        throw Exception('Unable to generate order ID.');
+      // if (uuidResult.rows.isEmpty) {
+      //   throw Exception('Unable to generate order ID.');
+      // }
+
+      // final orderId = uuidResult.rows.first.assoc()['orderId'] ?? '';
+
+      // if (orderId.isEmpty) {
+      //   throw Exception('Unable to generate order ID.');
+      // }
+
+      // ------------------------------------------------------------
+      // GENERATE ORDER ID
+      // ------------------------------------------------------------
+      final currentYear = DateTime.now().year;
+      final random = math.Random();
+
+      String orderId;
+
+      while (true) {
+        final randomNumber = 100000 + random.nextInt(900000);
+
+        orderId = 'ORD-$currentYear-$randomNumber';
+
+        // Make sure the generated ID does not already exist.
+        final existingOrder = await conn.execute(
+          '''
+    SELECT id
+    FROM Orders
+    WHERE id = :orderId
+    LIMIT 1
+    ''',
+          {'orderId': orderId},
+        );
+
+        if (existingOrder.rows.isEmpty) {
+          break;
+        }
       }
-
-      final orderId = uuidResult.rows.first.assoc()['orderId'] ?? '';
-
-      if (orderId.isEmpty) {
-        throw Exception('Unable to generate order ID.');
-      }
-
       // ------------------------------------------------------------
       // CREATE ORDER
       // ------------------------------------------------------------
@@ -1522,7 +1638,7 @@ class MySQLService {
     }
   }
 
-  Future<List<Map<String, String?>>> getUserOrders(String userId) async {
+  Future<List<Map<String, dynamic>>> getUserOrders(String userId) async {
     final conn = await connection;
 
     final result = await conn.execute(
@@ -1560,6 +1676,26 @@ class MySQLService {
     );
 
     return result.rows.map((row) => row.assoc()).toList();
+  }
+
+  Future<void> updateOrderStatus({
+    required String orderId,
+    required String status,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      '''
+    UPDATE Orders
+    SET status = :status
+    WHERE id = :orderId
+    ''',
+      {'orderId': orderId, 'status': status},
+    );
+
+    if (result.affectedRows.toInt() == 0) {
+      throw Exception('Order not found or status was not updated.');
+    }
   }
 
   Future<void> dispose() async {

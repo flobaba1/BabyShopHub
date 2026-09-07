@@ -157,7 +157,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
           description: _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
               : null,
-          imageBytes: _selectedImageBytes,
         );
       } else {
         success = await _dbService.createProduct(
