@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:go_router/go_router.dart';
 
+import '../../../core/user_session.dart';
 import '../../../utilities/models/product.dart';
 import '../../../core/mysql_service.dart';
 import '../../../utilities/widgets/product_card.dart';
+
 import '../products/all_products.dart';
 import '../categories/categories.dart';
 import '../categories/category_products_screen.dart';
+import '../products/search_products.dart';
+import '../homescreen/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final MySQLService _mysqlService = MySQLService();
 
   List<Product> _products = [];
-
   bool _isLoading = true;
   String? _error;
 
@@ -27,12 +32,45 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isCategoriesLoading = true;
   String? _categoriesError;
 
-  @override
+  String _firstName = '';
+  String _greeting = 'Good morning';
+  int _unreadNotificationCount = 0;
+
+  Timer? _flashDealTimer;
+  Timer? _bannerTimer;
+  // Changed from Duration + setState to ValueNotifier.
+  // This prevents the entire HomeScreen from rebuilding every second.
+  final ValueNotifier<Duration> _flashDealRemaining = ValueNotifier(
+    const Duration(hours: 6),
+  );
+
+  final ValueNotifier<Duration> _bannerRemaining = ValueNotifier(
+    const Duration(days: 2, hours: 14),
+  );
+
   @override
   void initState() {
     super.initState();
+
+    _loadUserName();
     _loadProducts();
     _loadCategories();
+    _setGreeting();
+    _startFlashDealTimer();
+    _startBannerTimer();
+    _loadUnreadNotificationCount();
+  }
+
+  // Dispose method to make sure the timer and notifier
+  // are not working when the user navigates away.
+  @override
+  void dispose() {
+    _flashDealTimer?.cancel();
+    _bannerTimer?.cancel();
+    _bannerRemaining.dispose();
+    _flashDealRemaining.dispose();
+
+    super.dispose();
   }
 
   Future<void> _loadProducts() async {
@@ -59,6 +97,114 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      await UserSession.loadUserSession();
+
+      final userId = UserSession.loggedUser?.id;
+
+      if (userId == null || userId.isEmpty) return;
+
+      final count = await _mysqlService.getUnreadNotificationCount(userId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _unreadNotificationCount = count;
+      });
+    } catch (e) {
+      debugPrint('Failed to load notification count: $e');
+    }
+  }
+
+  void _startFlashDealTimer() {
+    _flashDealTimer?.cancel();
+
+    _flashDealTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_flashDealRemaining.value.inSeconds <= 0) {
+        _flashDealRemaining.value = const Duration(hours: 6);
+      } else {
+        _flashDealRemaining.value -= const Duration(seconds: 1);
+      }
+    });
+  }
+
+  // void _startBannerTimer() {
+  //   Timer.periodic(
+  //     const Duration(seconds: 1),
+  //     (timer) {
+  //       if (_bannerRemaining.value.inSeconds <= 0) {
+  //         timer.cancel();
+  //         _bannerRemaining.value = Duration.zero;
+  //       } else {
+  //         _bannerRemaining.value -= const Duration(seconds: 1);
+  //       }
+  //     },
+  //   );
+  // }
+
+  // ...existing code...
+
+  void _startBannerTimer() {
+    _bannerTimer?.cancel();
+
+    _bannerTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_bannerRemaining.value.inSeconds <= 0) {
+        timer.cancel();
+        _bannerRemaining.value = Duration.zero;
+      } else {
+        _bannerRemaining.value -= const Duration(seconds: 1);
+      }
+    });
+  }
+
+  void _setGreeting() {
+    final hour = DateTime.now().hour;
+
+    setState(() {
+      if (hour >= 5 && hour < 12) {
+        _greeting = 'Good morning';
+      } else if (hour >= 12 && hour < 17) {
+        _greeting = 'Good afternoon';
+      } else {
+        _greeting = 'Good evening';
+      }
+    });
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      await UserSession.loadUserSession();
+
+      if (!mounted) return;
+
+      final user = UserSession.loggedUser;
+
+      if (user == null) {
+        debugPrint('No logged-in user found in session.');
+        return;
+      }
+
+      final fullName = user.fullName.trim();
+
+      if (fullName.isEmpty) {
+        debugPrint('Logged-in user has no full name.');
+        return;
+      }
+
+      final firstName = fullName.split(RegExp(r'\s+')).first;
+
+      setState(() {
+        _firstName = firstName;
+      });
+
+      debugPrint('HomeScreen user: $fullName');
+      debugPrint('HomeScreen first name: $firstName');
+    } catch (e) {
+      debugPrint('Failed to load user session: $e');
+    }
+  }
+
   Future<void> _loadCategories() async {
     try {
       final categories = await _mysqlService.getCategoriesWithProductCount();
@@ -80,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  //build home categories
+  // Build home categories
   Widget _buildHomeCategories() {
     if (_isCategoriesLoading) {
       return const Center(
@@ -126,7 +272,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         children: _categories.map((category) {
           final String categoryId = category['id']?.toString() ?? '';
-
           final String categoryName = category['name']?.toString() ?? '';
 
           return _CategoryItem(
@@ -151,88 +296,67 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  //get category icon based on name
+  // Get category icon based on name
   IconData _getCategoryIcon(String name) {
     switch (name) {
       case 'Diapers':
         return Icons.baby_changing_station_rounded;
-
       case 'Baby Food':
         return Icons.restaurant_rounded;
-
       case 'Clothing':
         return Icons.checkroom_rounded;
-
       case 'Toys':
         return Icons.toys_rounded;
-
       case 'Bath & Care':
         return Icons.bathtub_rounded;
-
       case 'Feeding':
         return Icons.local_drink_rounded;
-
       case 'Accessories':
         return Icons.child_friendly_rounded;
-
       default:
         return Icons.category_rounded;
     }
   }
 
-  //get category background color based on name
+  // Get category background color based on name
   Color _getCategoryBackgroundColor(String name) {
     switch (name) {
       case 'Diapers':
         return const Color(0xFFFFE5D7);
-
       case 'Baby Food':
         return const Color(0xFFE0F5E5);
-
       case 'Clothing':
         return const Color(0xFFDCE8FF);
-
       case 'Toys':
         return const Color(0xFFFFF0D1);
-
       case 'Bath & Care':
         return const Color(0xFFEEDFFF);
-
       case 'Feeding':
         return const Color(0xFFDDF6F7);
-
       case 'Accessories':
         return const Color(0xFFFFE0EC);
-
       default:
         return const Color(0xFFF2F2F2);
     }
   }
 
-  //get category icon color based on name
+  // Get category icon color based on name
   Color _getCategoryIconColor(String name) {
     switch (name) {
       case 'Diapers':
         return const Color(0xFFFF8A4C);
-
       case 'Baby Food':
         return const Color(0xFF3FA65B);
-
       case 'Clothing':
         return const Color(0xFF5C83D6);
-
       case 'Toys':
         return const Color(0xFFD89B31);
-
       case 'Bath & Care':
         return const Color(0xFF9A64D6);
-
       case 'Feeding':
         return const Color(0xFF42A5A9);
-
       case 'Accessories':
         return const Color(0xFFD95C87);
-
       default:
         return const Color(0xFF777777);
     }
@@ -245,7 +369,13 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xFFFF6600),
-          onRefresh: _loadProducts,
+          //onRefresh: _loadProducts,
+          onRefresh: () async {
+            await Future.wait([
+              _loadProducts(),
+              _loadUnreadNotificationCount(),
+            ]);
+          },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
@@ -255,27 +385,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const SizedBox(height: 16),
 
-                  // =========================================================
                   // HEADER
-                  // =========================================================
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Good afternoon,',
-                              style: TextStyle(
+                              '$_greeting,',
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF858A94),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'New 👋',
-                              style: TextStyle(
+                              '$_firstName 👋',
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFF202938),
@@ -288,8 +416,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Notification
                       _circleButton(
                         icon: Icons.notifications_none_rounded,
-                        showDot: true,
-                        onTap: () {},
+                        showDot: _unreadNotificationCount > 0,
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
+
+                          // Refresh unread count when the user comes back.
+                          _loadUnreadNotificationCount();
+                        },
                       ),
 
                       const SizedBox(width: 9),
@@ -302,10 +440,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           shape: BoxShape.circle,
                           color: Color(0xFFFF6600),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            'N',
-                            style: TextStyle(
+                            _firstName.isNotEmpty
+                                ? _firstName[0].toUpperCase()
+                                : 'N',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -318,12 +458,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 17),
 
-                  // =========================================================
                   // SEARCH BAR
-                  // =========================================================
                   GestureDetector(
                     onTap: () {
-                      context.push('/products');
+                      context.push('/products/search');
                     },
                     child: Container(
                       height: 46,
@@ -347,9 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 20,
                             color: Color(0xFFFF6600),
                           ),
-
                           const SizedBox(width: 9),
-
                           const Expanded(
                             child: Text(
                               'Search diapers, toys, food...',
@@ -359,7 +495,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
-
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -385,9 +520,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 13),
 
-                  // =========================================================
                   // PROMOTIONAL BANNER
-                  // =========================================================
                   ClipRRect(
                     borderRadius: BorderRadius.circular(17),
                     child: SizedBox(
@@ -397,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fit: StackFit.expand,
                         children: [
                           Image.asset(
-                            'assets/banner.jpg',
+                            'assets/banner.png',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
@@ -526,22 +659,53 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.white.withOpacity(0.88),
                                 borderRadius: BorderRadius.circular(9),
                               ),
-                              child: const Row(
+
+                              // child: const Row(
+                              //   mainAxisSize: MainAxisSize.min,
+                              //   children: [
+                              //     Icon(
+                              //       Icons.access_time_rounded,
+                              //       size: 10,
+                              //       color: Color(0xFF6E727A),
+                              //     ),
+                              //     SizedBox(width: 3),
+
+                              //     ValueListenableBuilder<Duration>( valueListenable: _bannerRemaining, builder: (context, remaining, _) { final days = remaining.inDays; final hours = remaining.inHours.remainder(24); final minutes = remaining.inMinutes.remainder(60); final seconds = remaining.inSeconds.remainder(60); return Text( '${days}d ${hours}h ${minutes}m ${seconds}s left', style: const TextStyle( fontSize: 8, fontWeight: FontWeight.w700, color: Color(0xFF6E727A), ), ); },
+                              //     ),
+                              //   ],
+                              // ),
+
+                              // ...existing code...
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.access_time_rounded,
                                     size: 10,
                                     color: Color(0xFF6E727A),
                                   ),
-                                  SizedBox(width: 3),
-                                  Text(
-                                    '2d 14h left',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF6E727A),
-                                    ),
+                                  const SizedBox(width: 3),
+                                  ValueListenableBuilder<Duration>(
+                                    valueListenable: _bannerRemaining,
+                                    builder: (context, remaining, _) {
+                                      final days = remaining.inDays;
+                                      final hours = remaining.inHours.remainder(
+                                        24,
+                                      );
+                                      final minutes = remaining.inMinutes
+                                          .remainder(60);
+                                      final seconds = remaining.inSeconds
+                                          .remainder(60);
+
+                                      return Text(
+                                        '${days}d ${hours}h ${minutes}m ${seconds}s left',
+                                        style: const TextStyle(
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF6E727A),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
@@ -554,9 +718,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 17),
 
-                  // =========================================================
                   // CATEGORIES HEADER
-                  // =========================================================
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -568,7 +730,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Color(0xFF202938),
                         ),
                       ),
-
                       GestureDetector(
                         onTap: () {
                           context.go('/categories');
@@ -587,16 +748,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 10),
 
-                  // =========================================================
                   // CATEGORIES
-                  // =========================================================
                   SizedBox(height: 82, child: _buildHomeCategories()),
 
                   const SizedBox(height: 18),
 
-                  // =========================================================
                   // FLASH DEALS
-                  // =========================================================
                   Container(
                     width: double.infinity,
                     height: 52,
@@ -614,9 +771,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white,
                           size: 19,
                         ),
-
                         const SizedBox(width: 5),
-
                         const Expanded(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -632,7 +787,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               SizedBox(height: 1),
                               Text(
-                                'Ends in 06:24:51',
+                                'Ends in',
                                 style: TextStyle(
                                   fontSize: 8,
                                   fontWeight: FontWeight.w500,
@@ -643,20 +798,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
 
-                        _TimeBox(text: '06'),
-                        const SizedBox(width: 5),
-                        _TimeBox(text: '24'),
-                        const SizedBox(width: 5),
-                        _TimeBox(text: '51'),
+                        // ONLY THIS SMALL WIDGET REBUILDS EVERY SECOND
+                        ValueListenableBuilder<Duration>(
+                          valueListenable: _flashDealRemaining,
+                          builder: (context, remaining, _) {
+                            return _FlashDealTimer(remaining: remaining);
+                          },
+                        ),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 18),
 
-                  // =========================================================
                   // FEATURED PRODUCTS HEADER
-                  // =========================================================
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -668,7 +823,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Color(0xFF202938),
                         ),
                       ),
-
                       GestureDetector(
                         onTap: () {
                           context.push('/products');
@@ -687,12 +841,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 10),
 
-                  // =========================================================
                   // PRODUCTS
-                  //
-                  // DO NOT CHANGE THIS SECTION.
-                  // ProductCard functionality remains untouched.
-                  // =========================================================
                   if (_isLoading)
                     const SizedBox(
                       height: 250,
@@ -722,9 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 12),
 
-                  // =========================================================
                   // BENEFITS
-                  // =========================================================
                   Row(
                     children: const [
                       Expanded(
@@ -734,9 +881,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           subtitle: 'Certified products',
                         ),
                       ),
-
                       SizedBox(width: 7),
-
                       Expanded(
                         child: _BenefitCard(
                           icon: Icons.local_shipping_outlined,
@@ -744,9 +889,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           subtitle: 'Same day',
                         ),
                       ),
-
                       SizedBox(width: 7),
-
                       Expanded(
                         child: _BenefitCard(
                           icon: Icons.workspace_premium_outlined,
@@ -767,10 +910,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===========================================================
   // EXISTING PRODUCT FUNCTIONALITY
-  // ===========================================================
-
   Widget _productColumns() {
     final products = _products.take(6).toList();
 
@@ -789,9 +929,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-
         const SizedBox(width: 10),
-
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -819,16 +957,12 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 35,
             color: Color(0xFFFF6600),
           ),
-
           const SizedBox(height: 8),
-
           const Text(
             'Unable to load products',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
           ),
-
           const SizedBox(height: 8),
-
           TextButton(
             onPressed: _loadProducts,
             child: const Text(
@@ -868,7 +1002,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Icon(icon, size: 19, color: const Color(0xFF4C5360)),
           ),
-
           if (showDot)
             Positioned(
               right: 7,
@@ -888,10 +1021,53 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ===============================================================
-// CATEGORY ITEM
-// ===============================================================
+class _FlashDealTimer extends StatelessWidget {
+  final Duration remaining;
 
+  const _FlashDealTimer({required this.remaining});
+
+  String _twoDigits(int value) {
+    return value.toString().padLeft(2, '0');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hours = remaining.inHours;
+    final minutes = remaining.inMinutes.remainder(60);
+    final seconds = remaining.inSeconds.remainder(60);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _TimeBox(text: _twoDigits(hours)),
+        const SizedBox(width: 4),
+        const Text(
+          ':',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 4),
+        _TimeBox(text: _twoDigits(minutes)),
+        const SizedBox(width: 4),
+        const Text(
+          ':',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 4),
+        _TimeBox(text: _twoDigits(seconds)),
+      ],
+    );
+  }
+}
+
+// CATEGORY ITEM
 class _CategoryItem extends StatelessWidget {
   final IconData icon;
   final String name;
@@ -945,10 +1121,7 @@ class _CategoryItem extends StatelessWidget {
   }
 }
 
-// ===============================================================
 // FLASH DEAL TIME BOX
-// ===============================================================
-
 class _TimeBox extends StatelessWidget {
   final String text;
 
@@ -976,10 +1149,7 @@ class _TimeBox extends StatelessWidget {
   }
 }
 
-// ===============================================================
 // BENEFIT CARD
-// ===============================================================
-
 class _BenefitCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -1012,9 +1182,7 @@ class _BenefitCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 17, color: const Color(0xFFFF6600)),
-
           const SizedBox(height: 3),
-
           Text(
             title,
             textAlign: TextAlign.center,
@@ -1024,9 +1192,7 @@ class _BenefitCard extends StatelessWidget {
               color: Color(0xFF273143),
             ),
           ),
-
           const SizedBox(height: 1),
-
           Text(
             subtitle,
             textAlign: TextAlign.center,

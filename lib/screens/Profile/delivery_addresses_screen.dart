@@ -1,15 +1,71 @@
 import 'package:flutter/material.dart';
-import 'add_address_screen.dart'; // Links straight to your edit form
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:baby_shop_hub/core/user_session.dart';
+import 'package:baby_shop_hub/utilities/models/user.dart';
+import 'add_address_screen.dart';
 
-class DeliveryAddressesScreen extends StatelessWidget {
+class DeliveryAddressesScreen extends StatefulWidget {
   const DeliveryAddressesScreen({super.key});
+
+  @override
+  State<DeliveryAddressesScreen> createState() =>
+      _DeliveryAddressesScreenState();
+}
+
+class _DeliveryAddressesScreenState extends State<DeliveryAddressesScreen> {
+  final MySQLService _mysqlService = MySQLService();
+  final UserSession _userSession = UserSession.instance;
+
+  User? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddress();
+  }
+
+  // Pulls the latest address string straight from your MySQL table
+  Future<void> _loadAddress() async {
+    final String? userId = _userSession.userId;
+    if (userId == null || userId.isEmpty) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final User user = await _mysqlService.getUserById(userId);
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // FIXED: Awaits the updated user package and updates state instantly when popped back
+  Future<void> _openEditAddress() async {
+    final dynamic updatedUser = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddAddressScreen()),
+    );
+
+    if (updatedUser is User && mounted) {
+      setState(() {
+        _user = updatedUser;
+      });
+    } else {
+      _loadAddress(); // Fallback database refresh loop
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFFFF8F4,
-      ), // Cohesive warm background setup
+      backgroundColor: const Color(0xFFFFF8F4),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -27,172 +83,130 @@ class DeliveryAddressesScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 10),
-            const Text(
-              'Current Shipping Address',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E1E24),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // FIXED: Renders exactly ONE single primary delivery address box container card cleanly
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.grey.withOpacity(0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.orange))
+          : Padding(
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Primary Address',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFF6D00),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF3EC),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'Active',
-                          style: TextStyle(
-                            color: Color(0xFFFF6D00),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   const Text(
-                    'Emma Johnson\n123 Maple Street\nApt 4B, Springfield\nIL 62701, USA\n+1 (555) 123-4567',
+                    'Current Shipping Address',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      height: 1.6,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E1E24),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14.0),
-                    child: Divider(height: 1),
-                  ),
+                  const SizedBox(height: 16),
 
-                  // Clean actions row containing just the edit routing trigger button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AddAddressScreen(),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.withOpacity(0.08)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Primary Address',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFFF6D00),
+                              ),
                             ),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFF3EC),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3EC),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                'Active',
+                                style: TextStyle(
+                                  color: Color(0xFFFF6D00),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // FIXED: Replaced hardcoded text with your real dynamic address data fields
+                        Text(
+                          _user?.address == null ||
+                                  _user!.address!.trim().isEmpty
+                              ? 'No shipping address saved yet.'
+                              : '${_user!.fullName}\n${_user!.address}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                            height: 1.6,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                        icon: const Icon(
-                          Icons.edit_outlined,
-                          color: Color(0xFFFF6D00),
-                          size: 18,
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14.0),
+                          child: Divider(height: 1),
                         ),
-                        label: const Text(
-                          'Edit Address',
-                          style: TextStyle(
-                            color: Color(0xFFFF6D00),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              onPressed: _openEditAddress,
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFF3EC),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: Color(0xFFFF6D00),
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'Edit Address',
+                                style: TextStyle(
+                                  color: Color(0xFFFF6D00),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // FIXED: Repaired the broken helper function structure down here
-  Widget _buildAddressCard({
-    required String title,
-    required bool isDefault,
-    required String address,
-    required VoidCallback onEdit,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E1E24),
-                ),
-              ),
-              if (isDefault)
-                const Icon(Icons.check_circle, color: Colors.orange),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(address),
-        ],
-      ),
     );
   }
 }

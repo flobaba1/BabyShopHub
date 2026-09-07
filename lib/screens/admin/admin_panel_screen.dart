@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import 'admin_dashboard_view.dart';
 import 'admin_product_view.dart';
 import 'admin_order_view.dart';
 import 'admin_user_view.dart';
-
+import 'admin_support_view.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -16,7 +17,13 @@ class AdminPanelScreen extends StatefulWidget {
 class _AdminPanelScreenState extends State<AdminPanelScreen> {
   int _selectedTabIndex = 0;
 
-  final List<String> _tabs = ['Dashboard', 'Products', 'Orders', 'Users'];
+  final List<String> _tabs = [
+    'Dashboard',
+    'Products',
+    'Orders',
+    'Users',
+    'Support',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -85,46 +92,55 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
           const SizedBox(height: 16),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: List.generate(_tabs.length, (index) {
-                final isSelected = _selectedTabIndex == index;
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      right: index == _tabs.length - 1 ? 0 : 8.0,
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedTabIndex = index;
-                        });
-                      },
-                      child: Container(
-                        height: 40,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFFFF5722)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _tabs[index],
-                          style: TextStyle(
+          // Admin tabs
+          SizedBox(
+            height: 40,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: List.generate(
+                  _tabs.length,
+                  (index) {
+                    final isSelected = _selectedTabIndex == index;
+
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        right: index == _tabs.length - 1 ? 0 : 8,
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedTabIndex = index;
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 90,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
-                                : const Color(0xFF4B5563),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                                ? const Color(0xFFFF5722)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _tabs[index],
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF4B5563),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              }),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
 
@@ -135,9 +151,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               index: _selectedTabIndex,
               children: const [
                 AdminDashboardView(),
-               AdminProductsView(),
-              AdminOrdersView(),
-              AdminUsersView(),
+                AdminProductsView(),
+                AdminOrdersView(),
+                AdminUsersView(),
+                AdminSupportView(),
               ],
             ),
           ),
@@ -146,3 +163,4 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     );
   }
 }
+

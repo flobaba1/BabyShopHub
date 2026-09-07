@@ -15,7 +15,7 @@ class UserCard {
     required this.userId,
   });
 
-  factory UserCard.fromRow(Map<String, String?> row) {
+  factory UserCard.fromRow(Map<String, dynamic> row) {
     return UserCard(
       id: row['id'] ?? '',
       cardHolder: row['cardHolder'] ?? '',
