@@ -5,6 +5,7 @@ import 'package:baby_shop_hub/core/onboarding_service.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'dart:developer';
 import 'package:baby_shop_hub/core/user_session.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

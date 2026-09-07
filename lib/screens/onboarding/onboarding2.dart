@@ -196,28 +196,28 @@ class OnboardingScreenTwo extends StatelessWidget {
                     const Spacer(),
 
                     // Sign in section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Already have an account? ',
-                          style: TextStyle(color: Colors.grey, fontSize: 15),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            context.go('/login');
-                          },
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(
-                              color: Color(0xFFFF6D00),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.center,
+                    //   children: [
+                    //     const Text(
+                    //       'Already have an account? ',
+                    //       style: TextStyle(color: Colors.grey, fontSize: 15),
+                    //     ),
+                    //     GestureDetector(
+                    //       onTap: () {
+                    //         context.go('/login');
+                    //       },
+                    //       child: const Text(
+                    //         'Sign In',
+                    //         style: TextStyle(
+                    //           color: Color(0xFFFF6D00),
+                    //           fontSize: 15,
+                    //           fontWeight: FontWeight.bold,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                     const SizedBox(height: 10),
                   ],
                 ),

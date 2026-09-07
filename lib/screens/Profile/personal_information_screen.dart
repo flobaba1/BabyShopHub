@@ -62,11 +62,13 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   Future<void> _openEditProfile() async {
     if (_user == null) return;
 
+    // 🛑 UPDATE THIS NAVIGATION PATH:
     final User? updatedUser = await Navigator.push<User>(
       context,
       MaterialPageRoute(builder: (context) => EditProfileScreen(user: _user!)),
     );
 
+    // 🛑 ADD THIS BLOCK TO FORCE AN IMMEDIATE UI UPDATE:
     if (updatedUser != null && mounted) {
       setState(() {
         _user = updatedUser;
@@ -91,7 +93,6 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         ? _user!.fullName[0].toUpperCase()
         : '?';
 
-    // FIXED: Removed the messy, nested copy-paste block here
     return Container(
       width: 90,
       height: 90,
