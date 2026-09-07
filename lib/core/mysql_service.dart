@@ -1169,35 +1169,9 @@ class MySQLService {
     return result.affectedRows.toInt() > 0;
   }
 
-  // Future<List<Map<String, String?>>> getOrderItems(String orderId) async {
-  //   final conn = await connection;
-
-  //   final result = await conn.execute(
-  //     '''
-  //     SELECT
-  //       oi.productId,
-  //       p.name,
-  //       oi.quantity
-  //     FROM OrderItems oi
-  //     INNER JOIN Products p
-  //       ON p.id = oi.productId
-  //     WHERE oi.orderId = :orderId
-  //     ''',
-  //     {
-  //       'orderId': orderId,
-  //     },
-  //   );
-
-  //   return result.rows.map((row) {
-  //     return {
-  //       'productId': row.colAt(0)?.toString(),
-  //       'name': row.colAt(1)?.toString(),
-  //       'quantity': row.colAt(2)?.toString(),
-  //     };
-  //   }).toList();
-  // }
-
-  Future<List<Map<String, String?>>> getProductReviews(String productId) async {
+  Future<List<Map<String, String?>>> getProductReviews(
+    String productId,
+  ) async {
     final conn = await connection;
 
     final result = await conn.execute(
@@ -1954,25 +1928,433 @@ class MySQLService {
     return result.rows.map((row) => row.assoc()).toList();
   }
 
-  Future<void> updateOrderStatus({
-    required String orderId,
-    required String status,
-  }) async {
-    final conn = await connection;
+Future<void> updateOrderStatus({
+  required String orderId,
+  required String status,
+}) async {
+  final conn = await connection;
 
-    final result = await conn.execute(
-      '''
+  // Get the customer who owns this order.
+  final orderResult = await conn.execute(
+    '''
+    SELECT userId
+    FROM Orders
+    WHERE id = :orderId
+    ''',
+    {
+      'orderId': orderId,
+    },
+  );
+
+  if (orderResult.rows.isEmpty) {
+    throw Exception('Order not found.');
+  }
+
+  final orderData = orderResult.rows.first.assoc();
+  final userId = orderData['userId'];
+
+  if (userId == null || userId.isEmpty) {
+    throw Exception('This order has no associated user.');
+  }
+
+  // Update the order status.
+  final updateResult = await conn.execute(
+    '''
     UPDATE Orders
     SET status = :status
     WHERE id = :orderId
     ''',
-      {'orderId': orderId, 'status': status},
-    );
+    {
+      'orderId': orderId,
+      'status': status,
+    },
+  );
 
-    if (result.affectedRows.toInt() == 0) {
-      throw Exception('Order not found or status was not updated.');
-    }
+  if (updateResult.affectedRows.toInt() == 0) {
+    throw Exception('Order status was not updated.');
   }
+
+  // Create notification message.
+  String title;
+  String message;
+
+  switch (status) {
+    case 'processing':
+      title = 'Order Processing';
+      message =
+          'Your order #$orderId is now being processed.';
+      break;
+
+    case 'shipped':
+      title = 'Order Shipped';
+      message =
+          'Your order #$orderId has been shipped and is on its way.';
+      break;
+
+    case 'out_for_delivery':
+      title = 'Out for Delivery';
+      message =
+          'Your order #$orderId is out for delivery.';
+      break;
+
+    case 'delivered':
+      title = 'Order Delivered';
+      message =
+          'Your order #$orderId has been delivered successfully.';
+      break;
+
+    case 'pending':
+      title = 'Order Pending';
+      message =
+          'Your order #$orderId is currently pending.';
+      break;
+
+    default:
+      title = 'Order Status Updated';
+      message =
+          'The status of your order #$orderId has been updated to $status.';
+  }
+
+  // Save notification.
+  await conn.execute(
+    '''
+    INSERT INTO Notifications (
+      id,
+      userId,
+      orderId,
+      title,
+      message,
+      type,
+      isRead
+    )
+    VALUES (
+      UUID(),
+      :userId,
+      :orderId,
+      :title,
+      :message,
+      'order_status',
+      FALSE
+    )
+    ''',
+    {
+      'userId': userId,
+      'orderId': orderId,
+      'title': title,
+      'message': message,
+    },
+  );
+}
+
+Future<List<Map<String, dynamic>>> getUserNotifications(
+  String userId,
+) async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      id,
+      userId,
+      orderId,
+      title,
+      message,
+      type,
+      isRead,
+      createdAt
+    FROM Notifications
+    WHERE userId = :userId
+    ORDER BY createdAt DESC
+    ''',
+    {
+      'userId': userId,
+    },
+  );
+
+  return result.rows.map((row) => row.assoc()).toList();
+}
+
+Future<int> getUnreadNotificationCount(String userId) async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT COUNT(*) AS unreadCount
+    FROM Notifications
+    WHERE userId = :userId
+      AND isRead = FALSE
+    ''',
+    {
+      'userId': userId,
+    },
+  );
+
+  if (result.rows.isEmpty) {
+    return 0;
+  }
+
+  final data = result.rows.first.assoc();
+
+  return int.tryParse(data['unreadCount'] ?? '0') ?? 0;
+}
+
+Future<void> markNotificationAsRead(
+  String notificationId,
+) async {
+  final conn = await connection;
+
+  await conn.execute(
+    '''
+    UPDATE Notifications
+    SET isRead = TRUE
+    WHERE id = :notificationId
+    ''',
+    {
+      'notificationId': notificationId,
+    },
+  );
+}
+
+Future<void> markAllNotificationsAsRead(
+  String userId,
+) async {
+  final conn = await connection;
+
+  await conn.execute(
+    '''
+    UPDATE Notifications
+    SET isRead = TRUE
+    WHERE userId = :userId
+      AND isRead = FALSE
+    ''',
+    {
+      'userId': userId,
+    },
+  );
+}
+
+Future<void> submitUserSupport({
+  required String userId,
+  required String category,
+  required String subject,
+  required String message,
+}) async {
+  final conn = await connection;
+
+  await conn.execute(
+    '''
+    INSERT INTO UserSupport (
+      id,
+      userId,
+      category,
+      subject,
+      message,
+      status
+    )
+    VALUES (
+      UUID(),
+      :userId,
+      :category,
+      :subject,
+      :message,
+      'open'
+    )
+    ''',
+    {
+      'userId': userId,
+      'category': category,
+      'subject': subject,
+      'message': message,
+    },
+  );
+}
+
+Future<List<Map<String, dynamic>>> getUserSupportRequests(
+  String userId,
+) async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      id,
+      userId,
+      category,
+      subject,
+      message,
+      status,
+      adminResponse,
+      createdAt,
+      updatedAt
+    FROM UserSupport
+    WHERE userId = :userId
+    ORDER BY createdAt DESC
+    ''',
+    {
+      'userId': userId,
+    },
+  );
+
+  return result.rows.map((row) => row.assoc()).toList();
+}
+
+Future<List<Map<String, dynamic>>> getAllUserSupportRequests() async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      s.id,
+      s.userId,
+      s.category,
+      s.subject,
+      s.message,
+      s.status,
+      s.adminResponse,
+      s.createdAt,
+      s.updatedAt,
+      u.fullName,
+      u.email
+    FROM UserSupport s
+    INNER JOIN Users u
+      ON s.userId = u.id
+    ORDER BY s.createdAt DESC
+    ''',
+  );
+
+  return result.rows.map((row) => row.assoc()).toList();
+}
+
+Future<void> updateSupportRequestStatus({
+  required String supportId,
+  required String status,
+  String? adminResponse,
+}) async {
+  final conn = await connection;
+
+  // 1. Get the user who submitted the support request.
+  final supportResult = await conn.execute(
+    '''
+    SELECT
+      userId,
+      subject
+    FROM UserSupport
+    WHERE id = :supportId
+    ''',
+    {
+      'supportId': supportId,
+    },
+  );
+
+  if (supportResult.rows.isEmpty) {
+    throw Exception('Support request not found.');
+  }
+
+  final supportData = supportResult.rows.first.assoc();
+
+  final userId = supportData['userId'];
+  final subject = supportData['subject'] ?? 'Support Request';
+
+  if (userId == null || userId.isEmpty) {
+    throw Exception(
+      'This support request has no associated user.',
+    );
+  }
+
+  // 2. Update the support request.
+  final updateResult = await conn.execute(
+    '''
+    UPDATE UserSupport
+    SET
+      status = :status,
+      adminResponse = :adminResponse
+    WHERE id = :supportId
+    ''',
+    {
+      'supportId': supportId,
+      'status': status,
+      'adminResponse': adminResponse,
+    },
+  );
+
+  if (updateResult.affectedRows.toInt() == 0) {
+    throw Exception(
+      'Support request was not updated.',
+    );
+  }
+
+  // 3. Only notify the user when the admin actually
+  //    provided a response.
+  if (adminResponse != null &&
+      adminResponse.trim().isNotEmpty) {
+    String title;
+    String message;
+
+    switch (status) {
+      case 'in_progress':
+        title = 'Support Request Updated';
+        message =
+            'An admin has responded to your support request '
+            '"$subject". Your request is now in progress.';
+        break;
+
+      case 'resolved':
+        title = 'Support Request Resolved';
+        message =
+            'An admin has responded to your support request '
+            '"$subject". Your request has been marked as resolved.';
+        break;
+
+      case 'closed':
+        title = 'Support Request Closed';
+        message =
+            'An admin has responded to your support request '
+            '"$subject". Your support request has been closed.';
+        break;
+
+      case 'open':
+      default:
+        title = 'Support Request Updated';
+        message =
+            'An admin has responded to your support request '
+            '"$subject".';
+        break;
+    }
+
+    // 4. Create a notification for the user.
+    await conn.execute(
+      '''
+      INSERT INTO Notifications (
+        id,
+        userId,
+        orderId,
+        title,
+        message,
+        type,
+        isRead
+      )
+      VALUES (
+        UUID(),
+        :userId,
+        NULL,
+        :title,
+        :message,
+        'support',
+        FALSE
+      )
+      ''',
+      {
+        'userId': userId,
+        'title': title,
+        'message': message,
+      },
+    );
+  }
+}
+
+
+
+
 
   Future<void> dispose() async {
     _idleTimer?.cancel();
