@@ -13,6 +13,7 @@ class Product {
   final String? description;
   final DateTime createdAt;
   final Uint8List? image;
+  final String? categoryName;
 
   Product({
     required this.id,
@@ -27,6 +28,7 @@ class Product {
     this.description,
     required this.createdAt,
     this.image,
+    this.categoryName,
   });
 
   factory Product.fromRow(Map<String, dynamic> row) {
@@ -67,8 +69,10 @@ class Product {
       createdAt: row['createdAt'] != null
           ? (row['createdAt'] is DateTime
                 ? row['createdAt'] as DateTime
-                : DateTime.tryParse(row['createdAt'].toString()) ??
-                      DateTime.now())
+                : DateTime.tryParse(
+                      row['createdAt'].toString(),
+                    ) ??
+                    DateTime.now())
           : DateTime.now(),
 
       image: imageBytes,

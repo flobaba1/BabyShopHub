@@ -356,12 +356,14 @@ class MySQLService {
   }
 
   /// Fetch a user by their unique user ID.
+  /// Fetch a user by their unique user ID.
   Future<User> getUserById(String userId) async {
     final conn = await connection;
 
-    final result = await conn.execute("SELECT * FROM Users WHERE id = :id", {
-      "id": userId,
-    });
+    final result = await conn.execute(
+      "SELECT id, fullName, email, address, password, status, createdAt, isAdmin, image FROM Users WHERE id = :id",
+      {"id": userId},
+    );
 
     if (result.rows.isEmpty) {
       throw Exception("User not found.");
@@ -826,6 +828,33 @@ class MySQLService {
       throw Exception('Failed to create product: $e');
     }
   }
+
+  Future<List<Product>> getProducts() async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      p.id,
+      p.name,
+      p.categoryId,
+      p.price,
+      p.quantity,
+      p.brand,
+      p.badge,
+      p.rating,
+      p.discount,
+      p.description,
+      p.createdAt,
+      c.name AS categoryName
+    FROM Products p
+    LEFT JOIN Categories c ON c.id = p.categoryId
+    ORDER BY p.createdAt DESC
+    ''',
+  );
+
+  return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
+}
 
   Future<List<Category>> fetchCategories() async {
     final conn = await connection;
