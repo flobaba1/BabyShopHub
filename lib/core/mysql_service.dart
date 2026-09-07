@@ -13,6 +13,7 @@ import 'package:baby_shop_hub/utilities/widgets/dashboard_widgets.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:baby_shop_hub/env/env.dart';
 import 'dart:developer';
@@ -113,6 +114,93 @@ class MySQLService {
     }
 
     return users;
+  }
+
+  Future<List<Map<String, dynamic>>> getOrderItems(String orderId) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      '''
+    SELECT
+      oi.id,
+      oi.productId,
+      oi.quantity,
+      oi.unitPrice,
+      oi.discount,
+      oi.totalPrice,
+      p.name,
+      p.brand,
+      p.image
+    FROM OrderItems oi
+    INNER JOIN Products p ON oi.productId = p.id
+    WHERE oi.orderId = :orderId
+    ORDER BY oi.createdAt ASC
+    ''',
+      {'orderId': orderId},
+    );
+
+    final items = <Map<String, dynamic>>[];
+
+    for (final row in result.rows) {
+      final data = row.assoc();
+
+      final imageBytes = _convertImageToBytes(data['image']);
+
+      items.add({...data, 'imageBytes': imageBytes});
+    }
+
+    return items;
+  }
+
+  Uint8List? _convertImageToBytes(dynamic rawImage) {
+    if (rawImage == null) {
+      return null;
+    }
+
+    // Database already returns Uint8List
+    if (rawImage is Uint8List) {
+      return rawImage;
+    }
+
+    // Database returns List<int>
+    if (rawImage is List<int>) {
+      return Uint8List.fromList(rawImage);
+    }
+
+    // Database returns String
+    if (rawImage is String) {
+      final text = rawImage.trim();
+
+      // String representation of List<int>
+      if (text.startsWith('[') && text.endsWith(']')) {
+        try {
+          final cleaned = text.substring(1, text.length - 1);
+
+          final bytes = cleaned
+              .split(',')
+              .where((value) => value.trim().isNotEmpty)
+              .map((value) => int.parse(value.trim()))
+              .toList();
+
+          return Uint8List.fromList(bytes);
+        } catch (e) {
+          debugPrint('Failed to convert image list: $e');
+          return null;
+        }
+      }
+
+      // Base64 string
+      try {
+        return base64Decode(text);
+      } catch (e) {
+        debugPrint('Failed to decode base64 image: $e');
+        return null;
+      }
+    }
+
+    debugPrint('Unsupported image type: ${rawImage.runtimeType}');
+
+    return null;
   }
 
   // Fetch recent 5 orders from MySQL
@@ -339,7 +427,7 @@ class MySQLService {
         icon: Icons.trending_up_rounded,
         iconColor: const Color(0xFF16A34A),
         iconBg: const Color(0xFFDCFCE7),
-        value: '\$${totalRevenue.toStringAsFixed(0)}',
+        value: '\₦${totalRevenue.toStringAsFixed(0)}',
         label: 'Revenue',
         subtext: 'Total revenue',
       ),
@@ -788,7 +876,6 @@ class MySQLService {
     double? rating,
     double? discount,
     String? description,
-    Uint8List? imageBytes,
   }) async {
     final conn = await connection;
 
@@ -1374,18 +1461,46 @@ class MySQLService {
       // ------------------------------------------------------------
       // GENERATE ORDER ID
       // ------------------------------------------------------------
-      final uuidResult = await conn.execute('SELECT UUID() AS orderId');
+      // final uuidResult = await conn.execute('SELECT UUID() AS orderId');
 
-      if (uuidResult.rows.isEmpty) {
-        throw Exception('Unable to generate order ID.');
+      // if (uuidResult.rows.isEmpty) {
+      //   throw Exception('Unable to generate order ID.');
+      // }
+
+      // final orderId = uuidResult.rows.first.assoc()['orderId'] ?? '';
+
+      // if (orderId.isEmpty) {
+      //   throw Exception('Unable to generate order ID.');
+      // }
+
+      // ------------------------------------------------------------
+      // GENERATE ORDER ID
+      // ------------------------------------------------------------
+      final currentYear = DateTime.now().year;
+      final random = math.Random();
+
+      String orderId;
+
+      while (true) {
+        final randomNumber = 100000 + random.nextInt(900000);
+
+        orderId = 'ORD-$currentYear-$randomNumber';
+
+        // Make sure the generated ID does not already exist.
+        final existingOrder = await conn.execute(
+          '''
+    SELECT id
+    FROM Orders
+    WHERE id = :orderId
+    LIMIT 1
+    ''',
+          {'orderId': orderId},
+        );
+
+        if (existingOrder.rows.isEmpty) {
+          break;
+        }
       }
-
-      final orderId = uuidResult.rows.first.assoc()['orderId'] ?? '';
-
-      if (orderId.isEmpty) {
-        throw Exception('Unable to generate order ID.');
-      }
-
       // ------------------------------------------------------------
       // CREATE ORDER
       // ------------------------------------------------------------
@@ -1560,6 +1675,26 @@ class MySQLService {
     );
 
     return result.rows.map((row) => row.assoc()).toList();
+  }
+
+  Future<void> updateOrderStatus({
+    required String orderId,
+    required String status,
+  }) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      '''
+    UPDATE Orders
+    SET status = :status
+    WHERE id = :orderId
+    ''',
+      {'orderId': orderId, 'status': status},
+    );
+
+    if (result.affectedRows.toInt() == 0) {
+      throw Exception('Order not found or status was not updated.');
+    }
   }
 
   Future<void> dispose() async {

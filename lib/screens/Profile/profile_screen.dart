@@ -11,6 +11,7 @@ import 'payment_methods_screen.dart';
 import 'my_wishlist_screen.dart';
 import 'privacy_security_screen.dart';
 import 'app_settings_screen.dart';
+import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -479,7 +480,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
 
         onTap: () {
-          // Admin navigation can be connected here later.
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+          );
         },
       ),
     );
@@ -717,10 +721,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ==================================================
                   // ADMIN PANEL
                   // ==================================================
-                  _buildAdminPanelTile(),
-
-                  const SizedBox(height: 16),
-
+                  if (_user?.isAdmin == true) ...[
+                    _buildAdminPanelTile(),
+                    const SizedBox(height: 16),
+                  ],
                   // ==================================================
                   // SIGN OUT
                   // ==================================================
