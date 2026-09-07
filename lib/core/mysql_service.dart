@@ -830,10 +830,9 @@ class MySQLService {
   }
 
   Future<List<Product>> getProducts() async {
-  final conn = await connection;
+    final conn = await connection;
 
-  final result = await conn.execute(
-    '''
+    final result = await conn.execute('''
     SELECT
       p.id,
       p.name,
@@ -850,11 +849,10 @@ class MySQLService {
     FROM Products p
     LEFT JOIN Categories c ON c.id = p.categoryId
     ORDER BY p.createdAt DESC
-    ''',
-  );
+    ''');
 
-  return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
-}
+    return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
+  }
 
   Future<List<Category>> fetchCategories() async {
     final conn = await connection;
@@ -1171,37 +1169,35 @@ class MySQLService {
     return result.affectedRows.toInt() > 0;
   }
 
-  Future<List<Map<String, String?>>> getOrderItems(String orderId) async {
-    final conn = await connection;
+  // Future<List<Map<String, String?>>> getOrderItems(String orderId) async {
+  //   final conn = await connection;
 
-    final result = await conn.execute(
-      '''
-      SELECT
-        oi.productId,
-        p.name,
-        oi.quantity
-      FROM OrderItems oi
-      INNER JOIN Products p
-        ON p.id = oi.productId
-      WHERE oi.orderId = :orderId
-      ''',
-      {
-        'orderId': orderId,
-      },
-    );
+  //   final result = await conn.execute(
+  //     '''
+  //     SELECT
+  //       oi.productId,
+  //       p.name,
+  //       oi.quantity
+  //     FROM OrderItems oi
+  //     INNER JOIN Products p
+  //       ON p.id = oi.productId
+  //     WHERE oi.orderId = :orderId
+  //     ''',
+  //     {
+  //       'orderId': orderId,
+  //     },
+  //   );
 
-    return result.rows.map((row) {
-      return {
-        'productId': row.colAt(0)?.toString(),
-        'name': row.colAt(1)?.toString(),
-        'quantity': row.colAt(2)?.toString(),
-      };
-    }).toList();
-  }
+  //   return result.rows.map((row) {
+  //     return {
+  //       'productId': row.colAt(0)?.toString(),
+  //       'name': row.colAt(1)?.toString(),
+  //       'quantity': row.colAt(2)?.toString(),
+  //     };
+  //   }).toList();
+  // }
 
-  Future<List<Map<String, String?>>> getProductReviews(
-    String productId,
-  ) async {
+  Future<List<Map<String, String?>>> getProductReviews(String productId) async {
     final conn = await connection;
 
     final result = await conn.execute(
@@ -1216,9 +1212,7 @@ class MySQLService {
       WHERE pr.productId = :productId
       ORDER BY pr.createdAt DESC
       ''',
-      {
-        'productId': productId,
-      },
+      {'productId': productId},
     );
 
     return result.rows.map((row) {
@@ -1984,4 +1978,20 @@ class MySQLService {
     _idleTimer?.cancel();
     await _closeConnection();
   }
+  // ===========================================================================
+  // PROFILE COUNTER METRICS
+
+  /// Counts total orders placed by this specific user
+  Future<int> getUserOrderCount(String userId) async {
+    final conn = await connection;
+    final result = await conn.execute(
+      "SELECT COUNT(*) AS total FROM Orders WHERE userId = :userId",
+      {"userId": userId},
+    );
+    return int.tryParse(
+          result.rows.first.assoc()['total']?.toString() ?? '0',
+        ) ??
+        0;
+  }
+
 }
