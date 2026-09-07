@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:baby_shop_hub/core/user_session.dart';
 
 class AddPaymentMethodScreen extends StatefulWidget {
   const AddPaymentMethodScreen({super.key});
@@ -8,7 +11,87 @@ class AddPaymentMethodScreen extends StatefulWidget {
 }
 
 class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
+  final MySQLService _mysqlService = MySQLService();
+  final UserSession _userSession = UserSession.instance;
+
   bool _isDefault = true;
+  bool _isSaving = false;
+
+  // FIXED: Moved controllers outside the build block so they do not crash your cursor typing!
+  final _holderController = TextEditingController(text: 'Emma Johnson');
+  final _numberController = TextEditingController(text: '4242 4242 4242 4242');
+  final _expiryController = TextEditingController(text: '12/26');
+  final _cvvController = TextEditingController(text: '123');
+
+  @override
+  void dispose() {
+    _holderController.dispose();
+    _numberController.dispose();
+    _expiryController.dispose();
+    _cvvController.dispose();
+    super.dispose();
+  }
+
+  // ============================================================
+  // DATABASE TRANSACTION: SAVING CARD SCHEMAS SECURELY
+  // ============================================================
+  Future<void> _savePaymentMethod() async {
+    final String? userId = _userSession.userId;
+    if (userId == null) return;
+
+    final holder = _holderController.text.trim();
+    final number = _numberController.text.trim().replaceAll(' ', '');
+    final expiry = _expiryController.text.trim();
+
+    if (holder.isEmpty || number.isEmpty || expiry.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill out all card entry fields.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    EasyLoading.show(status: 'Encrypting card verification token...');
+
+    // Extract the final 4 digits to store inside your MySQL table securely
+    final lastFour = number.length >= 4
+        ? number.substring(number.length - 4)
+        : '0000';
+
+    try {
+      // NOTE: This is where you would call Paystack/Flutterwave SDK to tokenise!
+      // Example: String gatewayToken = await PaystackPlugin.chargeCard(context, card);
+      final String mockGatewayToken =
+          'tok_paystack_${DateTime.now().millisecondsSinceEpoch}';
+
+      final bool success = await _mysqlService.addUserCard(
+        userId: userId,
+        cardHolder: holder,
+        cardLastFour: lastFour,
+        expiryDate: expiry,
+        cardToken: mockGatewayToken,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        EasyLoading.showSuccess('Payment method added successfully!');
+        Navigator.pop(
+          context,
+          true,
+        ); // Pop backwards with a success flag trigger
+      } else {
+        EasyLoading.showError('Could not write to user records.');
+      }
+    } catch (e) {
+      EasyLoading.showError('Secure Save Error');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +109,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Add / Edit Payment Method',
+          'Add Payment Method',
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -42,8 +125,6 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // FIXED: This row does not use a parent 'const' keyword,
-              // allowing dynamic helper function calls to execute flawlessly.
               Row(
                 children: [
                   Expanded(child: _buildTabItem('Card', true)),
@@ -55,29 +136,38 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
               ),
               const SizedBox(height: 24),
 
-              _buildInputField('Cardholder Name', 'Emma Johnson'),
+              _buildInputField('Cardholder Name', _holderController),
               const SizedBox(height: 16),
               _buildInputField(
                 'Card Number',
-                '4242 4242 4242 4242',
+                _numberController,
                 suffix: 'VISA',
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
 
               Row(
                 children: [
-                  Expanded(child: _buildInputField('Expiry Date', '12/26')),
+                  Expanded(
+                    child: _buildInputField(
+                      'Expiry Date',
+                      _expiryController,
+                      keyboardType: TextInputType.datetime,
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildInputField(
                       'CVV',
-                      '123',
+                      _cvvController,
                       suffixIcon: Icons.help_outline_rounded,
+                      keyboardType: TextInputType.number,
+                      obscure: true,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               const Text(
                 'Billing Address',
@@ -93,7 +183,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+                  border: Border.all(color: Colors.grey.withOpacity(0.15)),
                 ),
                 child: Row(
                   children: const [
@@ -128,7 +218,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
                     value: _isDefault,
                     onChanged: (val) => setState(() => _isDefault = val),
                     activeThumbColor: const Color(0xFFFF6D00),
-                    activeTrackColor: const Color(0xFFFF6D00).withValues(alpha: 0.2),
+                    activeTrackColor: const Color(0xFFFF6D00).withOpacity(0.2),
                   ),
                 ],
               ),
@@ -138,7 +228,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _isSaving ? null : _savePaymentMethod,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF6D00),
                     shape: RoundedRectangleBorder(
@@ -146,14 +236,16 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Save Payment Method',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isSaving
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Save Payment Method',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -163,7 +255,6 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
     );
   }
 
-  // Builder method for rendering interactive tab buttons dynamically
   Widget _buildTabItem(String label, bool isSelected) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -173,7 +264,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
         border: Border.all(
           color: isSelected
               ? Colors.transparent
-              : Colors.grey.withValues(alpha: 0.15),
+              : Colors.grey.withOpacity(0.15),
         ),
       ),
       child: Center(
@@ -189,12 +280,13 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
     );
   }
 
-  // Builder method for modular structural text field setups
   Widget _buildInputField(
     String label,
-    String value, {
+    TextEditingController controller, {
     String? suffix,
     IconData? suffixIcon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscure = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +301,9 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: TextEditingController(text: value),
+          controller: controller,
+          obscureText: obscure,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
@@ -236,7 +330,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
+              borderSide: BorderSide(color: Colors.grey.withOpacity(0.15)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

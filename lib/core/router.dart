@@ -25,11 +25,12 @@ import 'package:baby_shop_hub/screens/app/homescreen/homescreen.dart';
 import 'package:baby_shop_hub/screens/app/categories/categories.dart';
 import 'package:baby_shop_hub/screens/app/cart/cart.dart';
 
-// ==============================
 // PRODUCTS
-// ==============================
 import 'package:baby_shop_hub/screens/app/products/all_products.dart';
 import 'package:baby_shop_hub/screens/app/products/filtered_products.dart';
+import 'package:baby_shop_hub/screens/app/products/product_reviews.dart';
+import 'package:baby_shop_hub/screens/app/orders/ordersreview.dart';
+import 'package:baby_shop_hub/screens/app/products/search_products.dart';
 
 // ==============================
 // CHECKOUT
@@ -145,6 +146,36 @@ GoRouter createRouter(String initialRoute) {
         path: '/products/filter',
         builder: (context, state) {
           return const FilteredProductsScreen();
+        },
+      ),
+      GoRoute(
+        path: '/products/search',
+        builder: (context, state) {
+          return const SearchScreen();
+        },
+      ),
+
+      GoRoute(
+        path: '/products/reviews/:productId',
+        builder: (context, state) {
+          final productId =
+              state.pathParameters['productId']!;
+
+          return ProductReviewsScreen(
+            productId: productId,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/products/write-review/:productId',
+        builder: (context, state) {
+          final productId =
+              state.pathParameters['productId']!;
+
+          return WriteReviewScreen(
+            productId: productId,
+          );
         },
       ),
 
