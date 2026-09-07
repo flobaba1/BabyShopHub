@@ -71,7 +71,9 @@ class _ProductDetailsScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please log in to add items to your cart.'),
+          content: Text(
+            'Please log in to add items to your cart.',
+          ),
         ),
       );
 
@@ -145,7 +147,9 @@ class _ProductDetailsScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please log in to continue.'),
+          content: Text(
+            'Please log in to continue.',
+          ),
         ),
       );
 
@@ -199,7 +203,8 @@ class _ProductDetailsScreenState
           Expanded(
             child: SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   _buildImageSection(),
                   _buildProductInformation(),
@@ -313,7 +318,8 @@ class _ProductDetailsScreenState
   Widget _topButton({
     required IconData icon,
     required VoidCallback onTap,
-    Color iconColor = const Color(0xFF273143),
+    Color iconColor =
+        const Color(0xFF273143),
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -321,7 +327,9 @@ class _ProductDetailsScreenState
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.94),
+          color: Colors.white.withValues(
+            alpha: 0.94,
+          ),
           shape: BoxShape.circle,
           boxShadow: const [
             BoxShadow(
@@ -360,7 +368,8 @@ class _ProductDetailsScreenState
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           if (product.brand != null &&
               product.brand!.trim().isNotEmpty)
@@ -430,6 +439,62 @@ class _ProductDetailsScreenState
 
           const SizedBox(height: 16),
 
+          // ======================================================
+          // REVIEWS
+          // ======================================================
+
+          InkWell(
+            onTap: () {
+              context.push(
+                '/products/reviews/${product.id}',
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 14,
+                horizontal: 2,
+              ),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Color(0xFFEAEAEA),
+                  ),
+                  bottom: BorderSide(
+                    color: Color(0xFFEAEAEA),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.rate_review_outlined,
+                    size: 20,
+                    color: Color(0xFFFF6600),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Reviews',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF273143),
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 15,
+                    color: Color(0xFF8A8F98),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // PRICE
           Row(
             children: [
               Text(
@@ -486,7 +551,9 @@ class _ProductDetailsScreenState
 
           Text(
             product.description != null &&
-                    product.description!.trim().isNotEmpty
+                    product.description!
+                        .trim()
+                        .isNotEmpty
                 ? product.description!
                 : 'No description available for this product.',
             style: const TextStyle(
@@ -562,7 +629,8 @@ class _ProductDetailsScreenState
 
               IconButton(
                 onPressed:
-                    _selectedQuantity < product.quantity
+                    _selectedQuantity <
+                            product.quantity
                         ? () {
                             setState(() {
                               _selectedQuantity++;
@@ -610,7 +678,8 @@ class _ProductDetailsScreenState
             Expanded(
               child: OutlinedButton(
                 onPressed:
-                    product.quantity <= 0 || _addingToCart
+                    product.quantity <= 0 ||
+                            _addingToCart
                         ? null
                         : _addToCart,
                 style: OutlinedButton.styleFrom(
@@ -621,15 +690,18 @@ class _ProductDetailsScreenState
                   side: const BorderSide(
                     color: Color(0xFFFF6600),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  shape:
+                      RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(10),
                   ),
                 ),
                 child: _addingToCart
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
+                        child:
+                            CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Color(0xFFFF6600),
                         ),
@@ -639,7 +711,8 @@ class _ProductDetailsScreenState
                         style: TextStyle(
                           color: Color(0xFFFF6600),
                           fontSize: 13,
-                          fontWeight: FontWeight.w800,
+                          fontWeight:
+                              FontWeight.w800,
                         ),
                       ),
               ),
@@ -650,7 +723,8 @@ class _ProductDetailsScreenState
             Expanded(
               child: ElevatedButton(
                 onPressed:
-                    product.quantity <= 0 || _addingToCart
+                    product.quantity <= 0 ||
+                            _addingToCart
                         ? null
                         : _buyNow,
                 style: ElevatedButton.styleFrom(
@@ -658,11 +732,14 @@ class _ProductDetailsScreenState
                     double.infinity,
                     50,
                   ),
-                  backgroundColor: const Color(0xFFFF6600),
+                  backgroundColor:
+                      const Color(0xFFFF6600),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  shape:
+                      RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(10),
                   ),
                 ),
                 child: const Text(
@@ -680,4 +757,3 @@ class _ProductDetailsScreenState
     );
   }
 }
-

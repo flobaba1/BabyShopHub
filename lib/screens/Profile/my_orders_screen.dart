@@ -3,6 +3,7 @@ import 'package:baby_shop_hub/core/mysql_service.dart';
 import 'package:baby_shop_hub/core/user_session.dart';
 
 import 'track_order_screen.dart';
+import 'package:baby_shop_hub/screens/app/orders/ordersreview.dart';
 
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
@@ -23,8 +24,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     super.initState();
     _loadOrders();
   }
-
-  // ...existing code...
 
   Future<void> _loadOrders() async {
     final userId = await UserSession.getUserId();
@@ -59,6 +58,53 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
   }
 
+  Future<void> _writeReviewForOrder(
+    BuildContext context,
+    String orderId,
+  ) async {
+    try {
+      final items = await _mysqlService.getOrderItems(orderId);
+
+      if (!mounted) return;
+
+      if (items.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No products found in this order.'),
+          ),
+        );
+        return;
+      }
+
+      final productId = items.first['productId'];
+
+      if (productId == null || productId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to identify the product.'),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WriteReviewScreen(
+            productId: productId,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open the review page.'),
+        ),
+      );
+    }
+  }
   // ...existing code...
 
   Color _getStatusColor(String status) {
@@ -132,7 +178,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
   /// Extracts product image URLs from the order map.
   /// Supports common keys returned by the backend (comma-separated or single).
-  List<String> _getOrderImageUrls(Map<String, String?> order) {
+  List<String> _getOrderImageUrls(Map<String, dynamic> order) {
     // Prefer a list of images (comma-separated)
     final images =
         order['images'] ?? order['imageUrls'] ?? order['productImages'];
@@ -195,8 +241,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 20),
-
-              Expanded(child: _buildBody()),
+              Expanded(
+                child: _buildBody(),
+              ),
             ],
           ),
         ),
@@ -342,13 +389,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      order['id'] ?? '',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E24),
+                    SizedBox(
+                      width: 170,
+                      child: Text(
+                        'Order #${order['id']}',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E1E24),
+                        ),
                       ),
                     ),
                   ],
@@ -508,6 +558,59 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               ),
             ],
           ),
+
+          if (status.toLowerCase() == 'delivered') ...[
+            const SizedBox(height: 10),
+
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () {
+                final productId = order['productId'];
+
+                if (productId == null || productId.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Unable to identify the product.'),
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WriteReviewScreen(
+                      productId: productId,
+                    ),
+                  ),
+                );
+              },
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFF3EC),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 11,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.rate_review_outlined,
+                  color: Colors.orange,
+                  size: 17,
+                ),
+                label: const Text(
+                  'Write a Review',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

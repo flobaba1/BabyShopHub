@@ -1102,6 +1102,137 @@ class MySQLService {
   }
 
   // ===========================================================================
+  // PRODUCT REVIEWS
+  // ===========================================================================
+
+  Future<bool> addProductReview({
+    required String productId,
+    required String userId,
+    required int rating,
+    String? comment,
+  }) async {
+    if (rating < 1 || rating > 5) {
+      throw Exception('Rating must be between 1 and 5.');
+    }
+
+    final conn = await connection;
+
+    final productResult = await conn.execute(
+      '''
+      SELECT id
+      FROM Products
+      WHERE id = :productId
+      ''',
+      {'productId': productId},
+    );
+
+    if (productResult.rows.isEmpty) {
+      throw Exception('Product not found.');
+    }
+
+    final userResult = await conn.execute(
+      '''
+      SELECT id
+      FROM Users
+      WHERE id = :userId
+      ''',
+      {'userId': userId},
+    );
+
+    if (userResult.rows.isEmpty) {
+      throw Exception('User not found.');
+    }
+
+    final result = await conn.execute(
+      '''
+      INSERT INTO productReviews (
+        id,
+        productId,
+        userId,
+        rating,
+        comment
+      )
+      VALUES (
+        UUID(),
+        :productId,
+        :userId,
+        :rating,
+        :comment
+      )
+      ''',
+      {
+        'productId': productId,
+        'userId': userId,
+        'rating': rating,
+        'comment': comment,
+      },
+    );
+
+    return result.affectedRows.toInt() > 0;
+  }
+
+  Future<List<Map<String, String?>>> getOrderItems(String orderId) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      '''
+      SELECT
+        oi.productId,
+        p.name,
+        oi.quantity
+      FROM OrderItems oi
+      INNER JOIN Products p
+        ON p.id = oi.productId
+      WHERE oi.orderId = :orderId
+      ''',
+      {
+        'orderId': orderId,
+      },
+    );
+
+    return result.rows.map((row) {
+      return {
+        'productId': row.colAt(0)?.toString(),
+        'name': row.colAt(1)?.toString(),
+        'quantity': row.colAt(2)?.toString(),
+      };
+    }).toList();
+  }
+
+  Future<List<Map<String, String?>>> getProductReviews(
+    String productId,
+  ) async {
+    final conn = await connection;
+
+    final result = await conn.execute(
+      '''
+      SELECT
+        pr.id,
+        pr.userId,
+        pr.rating,
+        pr.comment,
+        pr.createdAt
+      FROM productReviews pr
+      WHERE pr.productId = :productId
+      ORDER BY pr.createdAt DESC
+      ''',
+      {
+        'productId': productId,
+      },
+    );
+
+    return result.rows.map((row) {
+      return {
+        'id': row.colAt(0)?.toString(),
+        'userId': row.colAt(1)?.toString(),
+        'rating': row.colAt(2)?.toString(),
+        'comment': row.colAt(3)?.toString(),
+        'createdAt': row.colAt(4)?.toString(),
+      };
+    }).toList();
+  }
+
+  // ===========================================================================
   // CATEGORIES
   // ===========================================================================
 
@@ -1804,7 +1935,8 @@ class MySQLService {
       o.shippingAddress,
       o.createdAt,
       o.updatedAt,
-      COUNT(oi.id) AS itemsCount
+      COUNT(oi.id) AS itemsCount,
+      MIN(oi.productId) AS productId
     FROM Orders o
     LEFT JOIN OrderItems oi
       ON oi.orderId = o.id
