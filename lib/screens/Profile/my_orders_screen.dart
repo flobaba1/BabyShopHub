@@ -566,26 +566,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: () {
-                final productId = order['productId'];
-
-                if (productId == null || productId.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Unable to identify the product.'),
-                    ),
+                  _writeReviewForOrder(
+                    context,
+                    order['id'].toString(),
                   );
-                  return;
-                }
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => WriteReviewScreen(
-                      productId: productId,
-                    ),
-                  ),
-                );
-              },
+                },
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFFFFF3EC),
                   padding: const EdgeInsets.symmetric(
