@@ -178,7 +178,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
   /// Extracts product image URLs from the order map.
   /// Supports common keys returned by the backend (comma-separated or single).
-  List<String> _getOrderImageUrls(Map<String, String?> order) {
+  List<String> _getOrderImageUrls(Map<String, dynamic> order) {
     // Prefer a list of images (comma-separated)
     final images =
         order['images'] ?? order['imageUrls'] ?? order['productImages'];
@@ -388,21 +388,22 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: 170,
-                    child: Text(
-                      'Order #${order['id']}',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E24),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 170,
+                      child: Text(
+                        'Order #${order['id']}',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E1E24),
+                        ),
                       ),
                     ),
-                   ),
                   ],
                 ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
