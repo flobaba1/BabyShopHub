@@ -131,10 +131,10 @@ class MySQLService {
   }
 
   Future<List<Map<String, dynamic>>> getOrderItems(String orderId) async {
-  final conn = await connection;
+    final conn = await connection;
 
-  final result = await conn.execute(
-    '''
+    final result = await conn.execute(
+      '''
     SELECT
       oi.id,
       oi.productId,

@@ -20,9 +20,12 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   final int _pageSize = 20;
 
   List<Product> _products = [];
+
   bool _isLoading = true;
   String? _error;
 
+  // Keeps the image Future for each product.
+  // This prevents the same image from being requested repeatedly.
   final Map<String, Future<Uint8List?>> _imageCache = {};
 
   @override
@@ -31,21 +34,25 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     _loadProducts();
   }
 
+  // ------------------------------------------------------------
+  // GET PRODUCT IMAGE
+  // ------------------------------------------------------------
+
   Future<Uint8List?> _getProductImage(String productId) {
-    // If this product image has already been requested,
-    // return the existing Future.
+    // Image was already requested.
+    // Return the existing Future instead of creating another request.
     if (_imageCache.containsKey(productId)) {
       return _imageCache[productId]!;
     }
 
-    // Create the request only once.
+    // Request the image once.
     final future = _dbService.getProductImage(productId);
 
     // Save the Future immediately.
     _imageCache[productId] = future;
 
-    // If the request fails, remove it from the cache so that
-    // a future attempt can try again.
+    // If the request fails, remove it from the cache
+    // so the next attempt can try again.
     future.catchError((error) {
       _imageCache.remove(productId);
       return null;
@@ -57,6 +64,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   // ------------------------------------------------------------
   // LOAD PRODUCTS
   // ------------------------------------------------------------
+
   Future<void> _loadProducts() async {
     if (mounted) {
       setState(() {
@@ -93,6 +101,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   // ------------------------------------------------------------
   // DELETE PRODUCT
   // ------------------------------------------------------------
+
   Future<void> _deleteProduct(String productId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -117,7 +126,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       final success = await _dbService.deleteProduct(productId);
 
       if (success && mounted) {
-        // Remove the deleted product's image from cache.
+        // Remove deleted product image from cache.
         _imageCache.remove(productId);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -132,6 +141,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   // ------------------------------------------------------------
   // ADD PRODUCT
   // ------------------------------------------------------------
+
   Future<void> _navigateAndAddProduct() async {
     final updated = await Navigator.push<bool>(
       context,
@@ -146,6 +156,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   // ------------------------------------------------------------
   // EDIT PRODUCT
   // ------------------------------------------------------------
+
   Future<void> _navigateAndEditProduct(Product product) async {
     final updated = await Navigator.push<bool>(
       context,
@@ -155,6 +166,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     );
 
     if (updated == true && mounted) {
+      // Remove the old cached image.
+      //  important if the user selected a new image.
       _imageCache.remove(product.id);
 
       await _loadProducts();
@@ -277,13 +290,11 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                   key: ValueKey(product.id),
                   product: product,
 
-                  // IMPORTANT:
-                  // The card receives the cached Future.
-                  //
-                  // It does NOT create a new MySQLService.
+                  // Pass the cached Future.
                   imageFuture: _getProductImage(product.id),
 
                   onEdit: () => _navigateAndEditProduct(product),
+
                   onDelete: () => _deleteProduct(product.id),
                 );
               },
@@ -367,9 +378,7 @@ class _AdminProductsViewState extends State<AdminProductsView> {
 
 class ProductItemCard extends StatefulWidget {
   final Product product;
-
   final Future<Uint8List?> imageFuture;
-
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -392,7 +401,7 @@ class _ProductItemCardState extends State<ProductItemCard> {
   void initState() {
     super.initState();
 
-    // Save the Future once when this card is created.
+    // Store the Future once.
     _imageFuture = widget.imageFuture;
   }
 
@@ -400,7 +409,8 @@ class _ProductItemCardState extends State<ProductItemCard> {
   void didUpdateWidget(covariant ProductItemCard oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // If the image Future changes, update it.
+    // If a new image Future is provided,
+    // use the new Future.
     if (oldWidget.imageFuture != widget.imageFuture) {
       _imageFuture = widget.imageFuture;
     }
@@ -419,71 +429,7 @@ class _ProductItemCardState extends State<ProductItemCard> {
           // ------------------------------------------------------
           // PRODUCT IMAGE
           // ------------------------------------------------------
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 60,
-              height: 60,
-              color: const Color(0xFFF3F4F6),
-              child: FutureBuilder<Uint8List?>(
-                future: _imageFuture,
-                builder: (context, snapshot) {
-                  // IMAGE LOADING
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFFFF5722),
-                        ),
-                      ),
-                    );
-                  }
-
-                  // IMAGE ERROR
-                  if (snapshot.hasError) {
-                    return const Icon(
-                      Icons.broken_image_outlined,
-                      color: Color(0xFF9CA3AF),
-                      size: 28,
-                    );
-                  }
-
-                  final imageBytes = snapshot.data;
-
-                  // NO IMAGE
-                  if (imageBytes == null || imageBytes.isEmpty) {
-                    return const Icon(
-                      Icons.inventory_2_outlined,
-                      color: Color(0xFF9CA3AF),
-                      size: 28,
-                    );
-                  }
-
-                  // IMAGE
-                  return Image.memory(
-                    imageBytes,
-                    fit: BoxFit.cover,
-                    width: 60,
-                    height: 60,
-
-                    cacheWidth: 120,
-                    cacheHeight: 120,
-
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.broken_image_outlined,
-                        color: Color(0xFF9CA3AF),
-                        size: 28,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
+          ProductImage(imageFuture: _imageFuture),
 
           const SizedBox(width: 12),
 
@@ -521,7 +467,7 @@ class _ProductItemCardState extends State<ProductItemCard> {
                 Row(
                   children: [
                     Text(
-                      '\$${widget.product.price.toStringAsFixed(2)}',
+                      '\₦${widget.product.price.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -589,6 +535,97 @@ class _ProductItemCardState extends State<ProductItemCard> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// PRODUCT IMAGE WIDGET
+// ============================================================================
+
+class ProductImage extends StatelessWidget {
+  final Future<Uint8List?> imageFuture;
+
+  const ProductImage({super.key, required this.imageFuture});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 60,
+        height: 60,
+        color: const Color(0xFFF3F4F6),
+        child: FutureBuilder<Uint8List?>(
+          future: imageFuture,
+          builder: (context, snapshot) {
+            // --------------------------------------------------
+            // IMAGE LOADING
+            // --------------------------------------------------
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFFF5722),
+                  ),
+                ),
+              );
+            }
+
+            // --------------------------------------------------
+            // IMAGE ERROR
+            // --------------------------------------------------
+
+            if (snapshot.hasError) {
+              return const Icon(
+                Icons.broken_image_outlined,
+                color: Color(0xFF9CA3AF),
+                size: 28,
+              );
+            }
+
+            final imageBytes = snapshot.data;
+
+            // --------------------------------------------------
+            // NO IMAGE
+            // --------------------------------------------------
+
+            if (imageBytes == null || imageBytes.isEmpty) {
+              return const Icon(
+                Icons.inventory_2_outlined,
+                color: Color(0xFF9CA3AF),
+                size: 28,
+              );
+            }
+
+            // --------------------------------------------------
+            // IMAGE
+            // --------------------------------------------------
+
+            return Image.memory(
+              imageBytes,
+              fit: BoxFit.cover,
+              width: 60,
+              height: 60,
+
+              cacheWidth: 120,
+              cacheHeight: 120,
+
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.broken_image_outlined,
+                  color: Color(0xFF9CA3AF),
+                  size: 28,
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

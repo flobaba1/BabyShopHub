@@ -59,7 +59,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
   }
 
-// ...existing code...
+  // ...existing code...
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
@@ -146,10 +146,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black87,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -171,10 +168,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    '📦',
-                    style: TextStyle(fontSize: 24),
-                  ),
+                  const Text('📦', style: TextStyle(fontSize: 24)),
                 ],
               ),
 
@@ -182,17 +176,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
               Text(
                 '${_orders.length} total orders',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
 
               const SizedBox(height: 20),
 
-              Expanded(
-                child: _buildBody(),
-              ),
+              Expanded(child: _buildBody()),
             ],
           ),
         ),
@@ -203,9 +192,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: Colors.orange,
-        ),
+        child: CircularProgressIndicator(color: Colors.orange),
       );
     }
 
@@ -214,19 +201,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 50,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.error_outline, size: 50, color: Colors.grey),
             const SizedBox(height: 12),
             Text(
               _errorMessage!,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 15,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 15),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -280,10 +260,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             const Text(
               'Your completed orders will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
           ],
         ),
@@ -301,10 +278,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         itemBuilder: (context, index) {
           final order = _orders[index];
 
-          return _buildOrderCard(
-            context,
-            order,
-          );
+          return _buildOrderCard(context, order);
         },
       ),
     );
@@ -319,8 +293,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     final statusColor = _getStatusColor(status);
     final statusBg = _getStatusBackground(status);
 
-    final itemsCount =
-        int.tryParse(order['itemsCount'] ?? '0') ?? 0;
+    final itemsCount = int.tryParse(order['itemsCount'] ?? '0') ?? 0;
 
     final total = _formatPrice(order['totalAmount']);
 
@@ -330,9 +303,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.12),
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -453,7 +424,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     MaterialPageRoute(
                       builder: (context) => TrackOrderScreen(
                         orderId: order['id'] ?? '',
-                        status: status,
+                        status: order['status'] ?? 'pending',
                       ),
                     ),
                   );
