@@ -491,10 +491,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
 
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
-          );
+          // Admin navigation can be connected here later.
         },
       ),
     );
@@ -744,10 +741,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ==================================================
                   // ADMIN PANEL
                   // ==================================================
-                  if (_user?.isAdmin == true) ...[
-                    _buildAdminPanelTile(),
-                    const SizedBox(height: 16),
-                  ],
+                  _buildAdminPanelTile(),
+
+                  const SizedBox(height: 16),
+
                   // ==================================================
                   // SIGN OUT
                   // ==================================================
