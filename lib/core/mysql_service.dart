@@ -662,6 +662,33 @@ class MySQLService {
     }
   }
 
+  Future<List<Product>> getProducts() async {
+  final conn = await connection;
+
+  final result = await conn.execute(
+    '''
+    SELECT
+      p.id,
+      p.name,
+      p.categoryId,
+      p.price,
+      p.quantity,
+      p.brand,
+      p.badge,
+      p.rating,
+      p.discount,
+      p.description,
+      p.createdAt,
+      c.name AS categoryName
+    FROM Products p
+    LEFT JOIN Categories c ON c.id = p.categoryId
+    ORDER BY p.createdAt DESC
+    ''',
+  );
+
+  return result.rows.map((row) => Product.fromRow(row.assoc())).toList();
+}
+
   Future<List<Category>> fetchCategories() async {
     final conn = await connection;
     final results = await conn.execute(
