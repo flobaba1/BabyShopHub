@@ -26,7 +26,7 @@ class User {
     this.image,
   });
 
-  factory User.fromRow(Map<String, String?> row, {Uint8List? imageBlob}) {
+  factory User.fromRow(Map<String, dynamic> row, {Uint8List? imageBlob}) {
     return User(
       id: row['id'] ?? '',
       fullName: row['fullName'] ?? '',

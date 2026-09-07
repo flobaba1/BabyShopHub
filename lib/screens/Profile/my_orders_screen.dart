@@ -14,7 +14,7 @@ class MyOrdersScreen extends StatefulWidget {
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
   final MySQLService _mysqlService = MySQLService();
 
-  List<Map<String, String?>> _orders = [];
+  List<Map<String, dynamic>> _orders = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -284,7 +284,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, Map<String, String?> order) {
+  Widget _buildOrderCard(
+    BuildContext context,
+    Map<String, dynamic> order,
+  ) {
     final status = order['status'] ?? 'pending';
 
     final statusColor = _getStatusColor(status);

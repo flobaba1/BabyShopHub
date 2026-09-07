@@ -1,4 +1,4 @@
-import 'package:mysql_client/mysql_client.dart';
+
 import 'package:baby_shop_hub/utilities/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:baby_shop_hub/utilities/models/user.dart';
@@ -14,7 +14,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:math' as math;
-
+import 'package:mysql_dart/mysql_dart.dart';
 import 'package:baby_shop_hub/env/env.dart';
 import 'dart:developer';
 
@@ -30,23 +30,37 @@ class MySQLService {
 
   Future<MySQLConnection> get connection async {
     _idleTimer?.cancel();
-    _idleTimer = Timer(_timeoutDuration, _closeConnection);
+
+    _idleTimer = Timer(
+      _timeoutDuration,
+      _closeConnection,
+    );
 
     if (_connection != null && _connection!.connected) {
       return _connection!;
     }
 
-    _connection = await MySQLConnection.createConnection(
-      host: Env.mysqlHost,
-      port: Env.mysqlPort,
-      userName: Env.mysqlUser,
-      password: Env.mysqlPassword,
-      databaseName: Env.mysqlDatabase,
-    );
+    try {
+      _connection = await MySQLConnection.createConnection(
+        host: Env.mysqlHost,
+        port: Env.mysqlPort,
+        userName: Env.mysqlUser,
+        password: Env.mysqlPassword,
+        databaseName: Env.mysqlDatabase,
+      );
 
-    await _connection!.connect();
-    log("MySQL connection established successfully.");
-    return _connection!;
+      await _connection!.connect();
+
+      log('MySQL connection established successfully.');
+
+      return _connection!;
+    } catch (e) {
+      _connection = null;
+
+      log('Failed to establish MySQL connection: $e');
+
+      rethrow;
+    }
   }
 
   // ===========================================================================
@@ -109,7 +123,7 @@ class MySQLService {
 
     List<User> users = [];
     for (final row in results.rows) {
-      final Map<String, String?> rowMap = row.assoc();
+      final Map<String, dynamic> rowMap = row.assoc();
       users.add(User.fromRow(rowMap));
     }
 
@@ -132,25 +146,37 @@ class MySQLService {
       p.brand,
       p.image
     FROM OrderItems oi
-    INNER JOIN Products p ON oi.productId = p.id
+    INNER JOIN Products p
+      ON oi.productId = p.id
     WHERE oi.orderId = :orderId
     ORDER BY oi.createdAt ASC
     ''',
-      {'orderId': orderId},
-    );
+    {
+      'orderId': orderId,
+    },
+  );
 
-    final items = <Map<String, dynamic>>[];
+  final items = <Map<String, dynamic>>[];
 
-    for (final row in result.rows) {
-      final data = row.assoc();
+  for (final row in result.rows) {
+    final data = row.assoc();
 
-      final imageBytes = _convertImageToBytes(data['image']);
+    Uint8List? imageBytes;
 
-      items.add({...data, 'imageBytes': imageBytes});
+    try {
+      imageBytes = row.typedColByName<Uint8List>('image');
+    } catch (_) {
+      imageBytes = _convertImageToBytes(data['image']);
     }
 
-    return items;
+    items.add({
+      ...data,
+      'imageBytes': imageBytes,
+    });
   }
+
+  return items;
+}
 
   Uint8List? _convertImageToBytes(dynamic rawImage) {
     if (rawImage == null) {
@@ -510,18 +536,25 @@ class MySQLService {
   }
 
   Future<Uint8List?> getUserProfileImage(String userId) async {
-    final conn = await connection;
+  final conn = await connection;
 
-    final result = await conn.execute(
-      "SELECT image FROM Users WHERE id = :id",
-      {"id": userId},
-    );
+  final result = await conn.execute(
+    'SELECT image FROM Users WHERE id = :id',
+    {'id': userId},
+  );
 
-    if (result.rows.isEmpty) return null;
-
-    final row = result.rows.first;
-    return row.colAt(0) as Uint8List?;
+  if (result.rows.isEmpty) {
+    return null;
   }
+
+  final row = result.rows.first;
+
+  try {
+    return row.typedColByName<Uint8List>('image');
+  } catch (e) {
+    return _convertImageToBytes(row.colByName('image'));
+  }
+}
 
   // ============================================================
   // CART ITEMS CRUD
@@ -777,61 +810,29 @@ class MySQLService {
   }
 
   Future<Uint8List?> getProductImage(String productId) async {
-    final conn = await connection;
+  final conn = await connection;
 
-    final result = await conn.execute(
-      "SELECT image FROM Products WHERE id = :id",
-      {"id": productId},
-    );
+  final result = await conn.execute(
+    'SELECT image FROM Products WHERE id = :id',
+    {'id': productId},
+  );
 
-    if (result.rows.isEmpty) {
-      return null;
-    }
-
-    final dynamic rawImage = result.rows.first.colAt(0);
-
-    if (rawImage == null) {
-      return null;
-    }
-
-    // If database already returns real binary bytes
-    if (rawImage is Uint8List) {
-      return rawImage;
-    }
-
-    // If database returns List<int>
-    if (rawImage is List<int>) {
-      return Uint8List.fromList(rawImage);
-    }
-
-    if (rawImage is String) {
-      final text = rawImage.trim();
-
-      if (text.startsWith('[') && text.endsWith(']')) {
-        try {
-          final cleaned = text.substring(1, text.length - 1);
-
-          final bytes = cleaned
-              .split(',')
-              .map((value) => int.parse(value.trim()))
-              .toList();
-
-          return Uint8List.fromList(bytes);
-        } catch (e) {
-          log("Failed to convert image list: $e");
-          return null;
-        }
-      }
-
-      try {
-        return base64Decode(text);
-      } catch (_) {
-        return null;
-      }
-    }
-
+  if (result.rows.isEmpty) {
     return null;
   }
+
+  final row = result.rows.first;
+
+  try {
+    return row.typedColByName<Uint8List>('image');
+  } catch (e) {
+    log('Failed to retrieve product image: $e');
+
+    // Fallback for data that may have previously been stored
+    // as a string/base64 representation.
+    return _convertImageToBytes(row.colByName('image'));
+  }
+}
 
   Future<List<Product>> fetchProductsPaginated({
     required int offset,
@@ -1637,7 +1638,7 @@ class MySQLService {
     }
   }
 
-  Future<List<Map<String, String?>>> getUserOrders(String userId) async {
+  Future<List<Map<String, dynamic>>> getUserOrders(String userId) async {
     final conn = await connection;
 
     final result = await conn.execute(

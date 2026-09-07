@@ -9,7 +9,7 @@ class WishlistItem {
     required this.productId,
   });
 
-  factory WishlistItem.fromRow(Map<String, String?> row) {
+  factory WishlistItem.fromRow(Map<String, dynamic> row) {
     return WishlistItem(
       id: row['id'] ?? '',
       userId: row['userId'] ?? '',
