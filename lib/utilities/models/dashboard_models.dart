@@ -17,7 +17,6 @@ class DashboardMetric {
     required this.subtext,
   });
 
-  
   factory DashboardMetric.fromMap(Map<String, dynamic> map) {
     return DashboardMetric(
       label: map['label'] ?? '',
@@ -62,7 +61,6 @@ class RecentOrder {
     required this.statusText,
   });
 
- 
   factory RecentOrder.fromMap(Map<String, dynamic> map) {
     final status = map['status']?.toString().toUpperCase() ?? 'PENDING';
 
@@ -70,7 +68,7 @@ class RecentOrder {
       id: '#${map['order_id'] ?? map['id']}',
       date: map['created_at']?.toString().split('T').first ?? '',
       status: status,
-      price: '\$${map['total_amount'] ?? map['price'] ?? '0.00'}',
+      price: '\₦${map['total_amount'] ?? map['price'] ?? '0.00'}',
       statusBg: _getStatusBg(status),
       statusText: _getStatusText(status),
     );

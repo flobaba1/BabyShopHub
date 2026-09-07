@@ -14,7 +14,7 @@ class MyOrdersScreen extends StatefulWidget {
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
   final MySQLService _mysqlService = MySQLService();
 
-  List<Map<String, String?>> _orders = [];
+  List<Map<String, dynamic>> _orders = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -195,6 +195,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 20),
+
               Expanded(child: _buildBody()),
             ],
           ),
@@ -292,12 +293,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, Map<String, String?> order) {
+  Widget _buildOrderCard(
+    BuildContext context,
+    Map<String, dynamic> order,
+  ) {
     final status = order['status'] ?? 'pending';
     final statusColor = _getStatusColor(status);
     final statusBg = _getStatusBackground(status);
 
     final itemsCount = int.tryParse(order['itemsCount'] ?? '0') ?? 0;
+
     final total = _formatPrice(order['totalAmount']);
     final imageUrls = _getOrderImageUrls(order);
 
@@ -307,6 +312,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -471,7 +477,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     MaterialPageRoute(
                       builder: (context) => TrackOrderScreen(
                         orderId: order['id'] ?? '',
-                        status: status,
+                        status: order['status'] ?? 'pending',
                       ),
                     ),
                   );

@@ -13,7 +13,7 @@ class CartItem {
     required this.createdAt,
   });
 
-  factory CartItem.fromRow(Map<String, String?> row) {
+  factory CartItem.fromRow(Map<String, dynamic> row) {
     return CartItem(
       id: row['id'] ?? '',
       productId: row['productId'] ?? '',
