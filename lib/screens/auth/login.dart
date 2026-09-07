@@ -47,13 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
         otp: otpCode,
       );
 
-      EasyLoading.dismiss();
-
       if (isEmailSent) {
         // Navigate to the OTP verification screen
         user.metadata['otpId'] = otpId; // Store the OTP ID in the user object
+        EasyLoading.dismiss();
         context.push('/otp', extra: user);
       } else {
+        EasyLoading.dismiss();
         EasyLoading.showError('Failed to send OTP. Please try again later.');
       }
     } else {
@@ -80,10 +80,12 @@ class _LoginScreenState extends State<LoginScreen> {
         .then((user) {
           EasyLoading.dismiss();
           if (user.status != 'Active') {
-            EasyLoading.showError('Your account is ${user.status}. Please contact support.');
+            EasyLoading.showError(
+              'Your account is ${user.status}. Please contact support.',
+            );
             return;
           }
-          
+
           if (user.use2FA) {
             // Navigate to the 2FA verification screen
             _generateOTPAndNavigate(user);
@@ -384,70 +386,69 @@ class _LoginScreenState extends State<LoginScreen> {
                 // ========================================================
                 // APPLE + GOOGLE
                 // ========================================================
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SizedBox(
-                      width: 151,
-                      height: 42,
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFFE3E5E9)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('🍎', style: TextStyle(fontSize: 13)),
-                            SizedBox(width: 5),
-                            Text(
-                              'Apple',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 151,
-                      height: 42,
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFFE3E5E9)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('🌐', style: TextStyle(fontSize: 13)),
-                            SizedBox(width: 5),
-                            Text(
-                              'Google',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     SizedBox(
+                //       width: 151,
+                //       height: 42,
+                //       child: OutlinedButton(
+                //         onPressed: () {},
+                //         style: OutlinedButton.styleFrom(
+                //           backgroundColor: Colors.white,
+                //           side: const BorderSide(color: Color(0xFFE3E5E9)),
+                //           shape: RoundedRectangleBorder(
+                //             borderRadius: BorderRadius.circular(11),
+                //           ),
+                //         ),
+                //         child: const Row(
+                //           mainAxisAlignment: MainAxisAlignment.center,
+                //           children: [
+                //             Text('🍎', style: TextStyle(fontSize: 13)),
+                //             SizedBox(width: 5),
+                //             Text(
+                //               'Apple',
+                //               style: TextStyle(
+                //                 fontSize: 12.5,
+                //                 fontWeight: FontWeight.w600,
+                //                 color: Colors.black,
+                //               ),
+                //             ),
+                //           ],
+                //         ),
+                //       ),
+                //     ),
+                //     SizedBox(
+                //       width: 151,
+                //       height: 42,
+                //       child: OutlinedButton(
+                //         onPressed: () {},
+                //         style: OutlinedButton.styleFrom(
+                //           backgroundColor: Colors.white,
+                //           side: const BorderSide(color: Color(0xFFE3E5E9)),
+                //           shape: RoundedRectangleBorder(
+                //             borderRadius: BorderRadius.circular(11),
+                //           ),
+                //         ),
+                //         child: const Row(
+                //           mainAxisAlignment: MainAxisAlignment.center,
+                //           children: [
+                //             Text('🌐', style: TextStyle(fontSize: 13)),
+                //             SizedBox(width: 5),
+                //             Text(
+                //               'Google',
+                //               style: TextStyle(
+                //                 fontSize: 12.5,
+                //                 fontWeight: FontWeight.w600,
+                //                 color: Colors.black,
+                //               ),
+                //             ),
+                //           ],
+                //         ),
+                //       ),
+                //     ),
+                //   ],
+                // ),
                 const SizedBox(height: 34),
 
                 // ========================================================

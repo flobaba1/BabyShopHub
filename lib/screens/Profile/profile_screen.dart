@@ -11,6 +11,7 @@ import 'payment_methods_screen.dart';
 import 'my_wishlist_screen.dart';
 import 'privacy_security_screen.dart';
 import 'app_settings_screen.dart';
+import 'package:baby_shop_hub/screens/admin/admin_panel_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -76,20 +77,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ============================================================
-  // OPEN PERSONAL INFORMATION
-  // ============================================================
-
   Future<void> _openPersonalInformation() async {
-    await Navigator.push(
+    final dynamic updatedUser = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const PersonalInformationScreen(),
       ),
     );
 
-    // Reload profile when returning.
-    await _loadUser();
+    if (updatedUser is User && mounted) {
+      setState(() {
+        _user = updatedUser;
+        _user!.metadata['orderCount'] = 3;
+        _user!.metadata['wishlistCount'] = 12;
+        _user!.metadata['reviewCount'] = 5;
+      });
+    } else {
+      await _loadUser();
+    }
   }
 
   // ============================================================
@@ -275,6 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // ======================================================
           // STATS
           // ======================================================
+          // Find this row inside _buildProfileHeader and replace the old stats blocks:
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
@@ -284,15 +290,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatColumn('3', 'Orders'),
-
+                _buildStatColumn(
+                  _user?.metadata['orderCount']?.toString() ?? '0',
+                  'Orders',
+                ),
                 Container(width: 1, height: 30, color: Colors.grey.shade200),
-
-                _buildStatColumn('12', 'Wishlist'),
-
+                _buildStatColumn(
+                  _user?.metadata['wishlistCount']?.toString() ?? '0',
+                  'Wishlist',
+                ),
                 Container(width: 1, height: 30, color: Colors.grey.shade200),
-
-                _buildStatColumn('5', 'Reviews'),
+                _buildStatColumn(
+                  _user?.metadata['reviewCount']?.toString() ?? '0',
+                  'Reviews',
+                ),
               ],
             ),
           ),
@@ -479,7 +490,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
 
         onTap: () {
-          // Admin navigation can be connected here later.
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+          );
         },
       ),
     );
@@ -598,16 +612,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // ==================================================
+                  
                   // NOTIFICATIONS
-                  // ==================================================
+                
                   _buildNotificationTile(),
 
                   const SizedBox(height: 16),
 
-                  // ==================================================
+                 
                   // PROFILE MENU
-                  // ==================================================
+                 
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
@@ -717,10 +731,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ==================================================
                   // ADMIN PANEL
                   // ==================================================
-                  _buildAdminPanelTile(),
-
-                  const SizedBox(height: 16),
-
+                  if (_user?.isAdmin == true) ...[
+                    _buildAdminPanelTile(),
+                    const SizedBox(height: 16),
+                  ],
                   // ==================================================
                   // SIGN OUT
                   // ==================================================

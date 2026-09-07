@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:baby_shop_hub/core/mysql_service.dart';
+import 'package:baby_shop_hub/core/user_session.dart';
+import 'package:baby_shop_hub/utilities/models/user.dart';
 
 class AddAddressScreen extends StatefulWidget {
   const AddAddressScreen({super.key});
@@ -8,10 +12,13 @@ class AddAddressScreen extends StatefulWidget {
 }
 
 class _AddAddressScreenState extends State<AddAddressScreen> {
-  // FIXED: Added the missing state variable for the dropdown selection
-  String _selectedCountry = 'United States';
+  final MySQLService _mysqlService = MySQLService();
+  final UserSession _userSession = UserSession.instance;
 
-  // Pre-populated text controllers representing your active primary address lines
+  String _selectedCountry = 'United States';
+  bool _isSaving = false;
+
+  // Form text field controllers
   final _line1Controller = TextEditingController(text: '123 Maple Street');
   final _line2Controller = TextEditingController(text: 'Apt 4B');
   final _cityController = TextEditingController(text: 'Springfield');
@@ -26,6 +33,73 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     _stateController.dispose();
     _zipController.dispose();
     super.dispose();
+  }
+
+  // ============================================================
+  // DATABASE TRANSACTION: COMPILING AND SAVING THE ADDRESS
+  // ============================================================
+  Future<void> _saveAddressToDatabase() async {
+    final String? userId = _userSession.userId;
+    if (userId == null) return;
+
+    final line1 = _line1Controller.text.trim();
+    final line2 = _line2Controller.text.trim();
+    final city = _cityController.text.trim();
+    final state = _stateController.text.trim();
+    final zip = _zipController.text.trim();
+
+    // Simple mandatory field layout check
+    if (line1.isEmpty || city.isEmpty || state.isEmpty || zip.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill out all mandatory address lines.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    EasyLoading.show(status: 'Updating destination address...');
+
+    // Combine separate entry fields into a single, clean comma-separated text string
+    final String fullAddressString = line2.isNotEmpty
+        ? "$line1, $line2, $city, $state, $zip, $_selectedCountry"
+        : "$line1, $city, $state, $zip, $_selectedCountry";
+
+    try {
+      // 1. Fetch current user data to keep existing profile text intact
+      final currentUser = await _mysqlService.getUserById(userId);
+
+      // 2. Execute the updateUserProfile function we wrote in your MySQLService earlier
+      final bool success = await _mysqlService.updateUserProfile(
+        userId: userId,
+        fullName: currentUser.fullName,
+        email: currentUser.email,
+        address: fullAddressString,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        EasyLoading.showSuccess('Shipping destination saved successfully!');
+
+        // 3. Download the absolute freshest user model bundle
+        final User updatedUser = await _mysqlService.getUserById(userId);
+
+        if (!mounted) return;
+        // 4. Pop backwards and pass the fresh User record with the updated address down the tree
+        Navigator.pop(context, updatedUser);
+      } else {
+        EasyLoading.showError('Could not process profile update query.');
+      }
+    } catch (e) {
+      EasyLoading.showError('Network Save Failure');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -66,7 +140,6 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Only the pure physical address properties are exposed as text entry forms
               _buildEditableAddressInput('Address Line 1', _line1Controller),
               const SizedBox(height: 16),
               _buildEditableAddressInput(
@@ -87,7 +160,6 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    // FIXED: Changed _buildFormInput to the correct name _buildEditableAddressInput
                     child: _buildEditableAddressInput(
                       'ZIP Code',
                       _zipController,
@@ -115,7 +187,6 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                     color: Colors.grey.withValues(alpha: 0.15),
                   ),
                 ),
-                // FIXED: Repaired the broken layout blocks and closed the dropdown hierarchy cleanly
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedCountry,
@@ -151,7 +222,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _isSaving ? null : _saveAddressToDatabase,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF6D00),
                     shape: RoundedRectangleBorder(
@@ -159,14 +230,16 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Save Address Changes',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isSaving
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Save Address Changes',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -195,7 +268,6 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         TextField(
           controller: controller,
           decoration: InputDecoration(
-            // FIXED: Replaced undefined variable placeholder with label
             hintText: label,
             hintStyle: TextStyle(
               color: Colors.grey.withValues(alpha: 0.6),
