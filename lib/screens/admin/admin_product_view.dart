@@ -23,40 +23,12 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   bool _isLoading = true;
   String? _error;
 
-  final Map<String, Future<Uint8List?>> _imageCache = {};
-
   @override
   void initState() {
     super.initState();
     _loadProducts();
   }
 
-  Future<Uint8List?> _getProductImage(String productId) {
-    // If this product image has already been requested,
-    // return the existing Future.
-    if (_imageCache.containsKey(productId)) {
-      return _imageCache[productId]!;
-    }
-
-    // Create the request only once.
-    final future = _dbService.getProductImage(productId);
-
-    // Save the Future immediately.
-    _imageCache[productId] = future;
-
-    // If the request fails, remove it from the cache so that
-    // a future attempt can try again.
-    future.catchError((error) {
-      _imageCache.remove(productId);
-      return null;
-    });
-
-    return future;
-  }
-
-  // ------------------------------------------------------------
-  // LOAD PRODUCTS
-  // ------------------------------------------------------------
   Future<void> _loadProducts() async {
     if (mounted) {
       setState(() {
@@ -90,9 +62,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     }
   }
 
-  // ------------------------------------------------------------
-  // DELETE PRODUCT
-  // ------------------------------------------------------------
   Future<void> _deleteProduct(String productId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -117,9 +86,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       final success = await _dbService.deleteProduct(productId);
 
       if (success && mounted) {
-        // Remove the deleted product's image from cache.
-        _imageCache.remove(productId);
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product deleted successfully')),
         );
@@ -129,9 +95,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     }
   }
 
-  // ------------------------------------------------------------
-  // ADD PRODUCT
-  // ------------------------------------------------------------
   Future<void> _navigateAndAddProduct() async {
     final updated = await Navigator.push<bool>(
       context,
@@ -143,9 +106,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     }
   }
 
-  // ------------------------------------------------------------
-  // EDIT PRODUCT
-  // ------------------------------------------------------------
   Future<void> _navigateAndEditProduct(Product product) async {
     final updated = await Navigator.push<bool>(
       context,
@@ -155,8 +115,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     );
 
     if (updated == true && mounted) {
-      _imageCache.remove(product.id);
-
       await _loadProducts();
     }
   }
@@ -167,9 +125,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         children: [
-          // ------------------------------------------------------
-          // HEADER
-          // ------------------------------------------------------
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -209,9 +164,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
 
           const SizedBox(height: 16),
 
-          // ------------------------------------------------------
-          // LOADING
-          // ------------------------------------------------------
           if (_isLoading)
             const Center(
               child: Padding(
@@ -219,9 +171,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                 child: CircularProgressIndicator(color: Color(0xFFFF5722)),
               ),
             )
-          // ------------------------------------------------------
-          // ERROR
-          // ------------------------------------------------------
           else if (_error != null)
             Center(
               child: Padding(
@@ -251,9 +200,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                 ),
               ),
             )
-          // ------------------------------------------------------
-          // EMPTY
-          // ------------------------------------------------------
           else if (_products.isEmpty)
             const Center(
               child: Padding(
@@ -261,9 +207,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                 child: Text('No products found'),
               ),
             )
-          // ------------------------------------------------------
-          // PRODUCTS
-          // ------------------------------------------------------
           else
             ListView.separated(
               shrinkWrap: true,
@@ -276,13 +219,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                 return ProductItemCard(
                   key: ValueKey(product.id),
                   product: product,
-
-                  // IMPORTANT:
-                  // The card receives the cached Future.
-                  //
-                  // It does NOT create a new MySQLService.
-                  imageFuture: _getProductImage(product.id),
-
                   onEdit: () => _navigateAndEditProduct(product),
                   onDelete: () => _deleteProduct(product.id),
                 );
@@ -291,9 +227,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
 
           const SizedBox(height: 20),
 
-          // ------------------------------------------------------
-          // PAGINATION
-          // ------------------------------------------------------
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -303,7 +236,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                         setState(() {
                           _currentPage--;
                         });
-
                         _loadProducts();
                       }
                     : null,
@@ -341,7 +273,6 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                         setState(() {
                           _currentPage++;
                         });
-
                         _loadProducts();
                       },
                 icon: const Text('Next'),
@@ -361,50 +292,17 @@ class _AdminProductsViewState extends State<AdminProductsView> {
   }
 }
 
-// ============================================================================
-// PRODUCT ITEM CARD
-// ============================================================================
-
-class ProductItemCard extends StatefulWidget {
+class ProductItemCard extends StatelessWidget {
   final Product product;
-
-  final Future<Uint8List?> imageFuture;
-
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const ProductItemCard({
     super.key,
     required this.product,
-    required this.imageFuture,
     required this.onEdit,
     required this.onDelete,
   });
-
-  @override
-  State<ProductItemCard> createState() => _ProductItemCardState();
-}
-
-class _ProductItemCardState extends State<ProductItemCard> {
-  late Future<Uint8List?> _imageFuture;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Save the Future once when this card is created.
-    _imageFuture = widget.imageFuture;
-  }
-
-  @override
-  void didUpdateWidget(covariant ProductItemCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // If the image Future changes, update it.
-    if (oldWidget.imageFuture != widget.imageFuture) {
-      _imageFuture = widget.imageFuture;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -416,86 +314,16 @@ class _ProductItemCardState extends State<ProductItemCard> {
       ),
       child: Row(
         children: [
-          // ------------------------------------------------------
-          // PRODUCT IMAGE
-          // ------------------------------------------------------
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 60,
-              height: 60,
-              color: const Color(0xFFF3F4F6),
-              child: FutureBuilder<Uint8List?>(
-                future: _imageFuture,
-                builder: (context, snapshot) {
-                  // IMAGE LOADING
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFFFF5722),
-                        ),
-                      ),
-                    );
-                  }
-
-                  // IMAGE ERROR
-                  if (snapshot.hasError) {
-                    return const Icon(
-                      Icons.broken_image_outlined,
-                      color: Color(0xFF9CA3AF),
-                      size: 28,
-                    );
-                  }
-
-                  final imageBytes = snapshot.data;
-
-                  // NO IMAGE
-                  if (imageBytes == null || imageBytes.isEmpty) {
-                    return const Icon(
-                      Icons.inventory_2_outlined,
-                      color: Color(0xFF9CA3AF),
-                      size: 28,
-                    );
-                  }
-
-                  // IMAGE
-                  return Image.memory(
-                    imageBytes,
-                    fit: BoxFit.cover,
-                    width: 60,
-                    height: 60,
-
-                    cacheWidth: 120,
-                    cacheHeight: 120,
-
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.broken_image_outlined,
-                        color: Color(0xFF9CA3AF),
-                        size: 28,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
+          ProductImage(imageBytes: product.image),
 
           const SizedBox(width: 12),
 
-          // ------------------------------------------------------
-          // PRODUCT INFORMATION
-          // ------------------------------------------------------
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.product.name,
+                  product.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -508,7 +336,7 @@ class _ProductItemCardState extends State<ProductItemCard> {
                 const SizedBox(height: 2),
 
                 Text(
-                  widget.product.brand ?? 'Unbranded',
+                  product.brand ?? 'Unbranded',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFFFF5722),
@@ -521,7 +349,7 @@ class _ProductItemCardState extends State<ProductItemCard> {
                 Row(
                   children: [
                     Text(
-                      '\$${widget.product.price.toStringAsFixed(2)}',
+                      '₦${product.price.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -532,7 +360,7 @@ class _ProductItemCardState extends State<ProductItemCard> {
                     const SizedBox(width: 8),
 
                     Text(
-                      'Stock: ${widget.product.quantity}',
+                      'Stock: ${product.quantity}',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF9CA3AF),
@@ -544,14 +372,10 @@ class _ProductItemCardState extends State<ProductItemCard> {
             ),
           ),
 
-          // ------------------------------------------------------
-          // ACTION BUTTONS
-          // ------------------------------------------------------
           Column(
             children: [
-              // EDIT
               InkWell(
-                onTap: widget.onEdit,
+                onTap: onEdit,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.all(6),
@@ -569,9 +393,8 @@ class _ProductItemCardState extends State<ProductItemCard> {
 
               const SizedBox(height: 6),
 
-              // DELETE
               InkWell(
-                onTap: widget.onDelete,
+                onTap: onDelete,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.all(6),
@@ -590,6 +413,53 @@ class _ProductItemCardState extends State<ProductItemCard> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class ProductImage extends StatelessWidget {
+  final Uint8List? imageBytes;
+
+  const ProductImage({super.key, required this.imageBytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 60,
+        height: 60,
+        color: const Color(0xFFF3F4F6),
+        child: _buildImage(),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    if (imageBytes == null || imageBytes!.isEmpty) {
+      return const Icon(
+        Icons.inventory_2_outlined,
+        color: Color(0xFF9CA3AF),
+        size: 28,
+      );
+    }
+
+    return Image.memory(
+      imageBytes!,
+      width: 60,
+      height: 60,
+      fit: BoxFit.cover,
+      cacheWidth: 120,
+      cacheHeight: 120,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('IMAGE DECODE ERROR: $error');
+
+        return const Icon(
+          Icons.broken_image_outlined,
+          color: Color(0xFF9CA3AF),
+          size: 28,
+        );
+      },
     );
   }
 }

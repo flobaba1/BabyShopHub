@@ -1,6 +1,8 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'package:baby_shop_hub/utilities/models/product.dart';
 import 'package:baby_shop_hub/core/mysql_service.dart';
 import 'package:baby_shop_hub/utilities/models/category.dart';
@@ -16,6 +18,7 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final MySQLService _dbService = MySQLService();
 
   late TextEditingController _titleController;
@@ -25,12 +28,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
   late TextEditingController _descriptionController;
 
   Uint8List? _selectedImageBytes;
+
   bool _isSaving = false;
   bool _isLoadingCategories = true;
+
+  // IMPORTANT:
+  // This tells us whether the user selected a NEW image.
+  //
+  // Loading the existing image does NOT set this to true.
+  bool _imageChanged = false;
+
   final ImagePicker _picker = ImagePicker();
 
   String? _selectedCategoryId;
   String? _selectedBadge;
+
   List<Category> _categories = [];
 
   final List<String> _badgeOptions = [
@@ -45,15 +57,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   void initState() {
     super.initState();
+
     final p = widget.productToEdit;
+
     _titleController = TextEditingController(text: p?.name ?? '');
+
     _brandController = TextEditingController(text: p?.brand ?? '');
+
     _priceController = TextEditingController(
       text: p != null ? p.price.toString() : '',
     );
+
     _stockController = TextEditingController(
       text: p != null ? p.quantity.toString() : '',
     );
+
     _descriptionController = TextEditingController(text: p?.description ?? '');
 
     _selectedCategoryId = p?.categoryId;
@@ -61,6 +79,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     _loadCategoriesAndImage();
   }
+
+  // ------------------------------------------------------------
+  // LOAD CATEGORIES AND EXISTING IMAGE
+  // ------------------------------------------------------------
 
   Future<void> _loadCategoriesAndImage() async {
     try {
@@ -78,7 +100,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoadingCategories = false);
+        setState(() {
+          _isLoadingCategories = false;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load categories: $e'),
@@ -88,16 +113,26 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
     }
 
+    // If editing, load the existing image.
     if (widget.productToEdit?.id != null) {
       _loadExistingImage(widget.productToEdit!.id);
     }
   }
 
+  // ------------------------------------------------------------
+  // LOAD EXISTING IMAGE
+  // ------------------------------------------------------------
+
   Future<void> _loadExistingImage(String productId) async {
     final bytes = await _dbService.getProductImage(productId);
+
     if (mounted && bytes != null) {
       setState(() {
         _selectedImageBytes = bytes;
+
+        // IMPORTANT:
+        // This is an old image, not a newly selected image.
+        _imageChanged = false;
       });
     }
   }
@@ -109,8 +144,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _priceController.dispose();
     _stockController.dispose();
     _descriptionController.dispose();
+
     super.dispose();
   }
+
+  // ------------------------------------------------------------
+  // PICK IMAGE
+  // ------------------------------------------------------------
 
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(
@@ -120,20 +160,33 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
+
       if (mounted) {
         setState(() {
           _selectedImageBytes = bytes;
+
+          // IMPORTANT:
+          // The user selected a NEW image.
+          _imageChanged = true;
         });
       }
     }
   }
 
+  // ------------------------------------------------------------
+  // SAVE PRODUCT
+  // ------------------------------------------------------------
+
   Future<void> _saveProduct() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a valid category.')),
       );
+
       return;
     }
 
@@ -141,9 +194,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     try {
       final isEditing = widget.productToEdit != null;
+
       bool success;
 
+      // ========================================================
+      // EDIT PRODUCT
+      // ========================================================
+
       if (isEditing) {
+        // First update the normal product information.
         success = await _dbService.updateProduct(
           id: widget.productToEdit!.id,
           name: _titleController.text.trim(),
@@ -157,9 +216,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
           description: _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
               : null,
-          imageBytes: _selectedImageBytes,
         );
-      } else {
+
+        // ======================================================
+        // UPDATE IMAGE ONLY IF USER SELECTED A NEW ONE
+        // ======================================================
+
+        if (success && _imageChanged && _selectedImageBytes != null) {
+          await _dbService.updateProductImage(
+            productId: widget.productToEdit!.id,
+            imageBytes: _selectedImageBytes!,
+          );
+        }
+      }
+      // ========================================================
+      // CREATE PRODUCT
+      // ========================================================
+      else {
         success = await _dbService.createProduct(
           name: _titleController.text.trim(),
           categoryId: _selectedCategoryId!,
@@ -185,6 +258,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             backgroundColor: const Color(0xFF16A34A),
           ),
         );
+
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -201,7 +275,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -211,13 +287,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7ED),
+
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF111827)),
           onPressed: () => Navigator.pop(context),
         ),
+
         title: Text(
           isEditing ? 'Edit Product' : 'Add New Product',
           style: const TextStyle(
@@ -226,29 +305,41 @@ class _AddProductScreenState extends State<AddProductScreen> {
             fontSize: 20,
           ),
         ),
+
         centerTitle: true,
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
+
         child: Form(
           key: _formKey,
+
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+
             children: [
+              // ==================================================
+              // IMAGE
+              // ==================================================
               Center(
                 child: GestureDetector(
                   onTap: _pickImage,
+
                   child: Container(
                     width: double.infinity,
                     height: 140,
+
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFFED7AA)),
                     ),
+
                     child: _selectedImageBytes != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(16),
+
                             child: Image.memory(
                               _selectedImageBytes!,
                               width: double.infinity,
@@ -260,44 +351,66 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 20),
+
+              // ==================================================
+              // PRODUCT TITLE
+              // ==================================================
               _buildLabel('Product Title'),
+
               TextFormField(
                 controller: _titleController,
+
                 decoration: _buildInputDecoration(
                   'e.g., Huggies Little Snugglers',
                 ),
+
                 validator: (val) =>
                     val == null || val.isEmpty ? 'Please enter a title' : null,
               ),
+
               const SizedBox(height: 14),
+
+              // ==================================================
+              // BRAND + BADGE
+              // ==================================================
               Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+
                       children: [
                         _buildLabel('Brand'),
+
                         TextFormField(
                           controller: _brandController,
+
                           decoration: _buildInputDecoration('e.g., Huggies'),
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+
                       children: [
                         _buildLabel('Product Badge'),
+
                         DropdownButtonFormField<String>(
                           value: _selectedBadge,
+
                           items: [
                             const DropdownMenuItem<String>(
                               value: null,
                               child: Text('None'),
                             ),
+
                             ..._badgeOptions.map((badge) {
                               return DropdownMenuItem<String>(
                                 value: badge,
@@ -305,9 +418,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               );
                             }),
                           ],
+
                           onChanged: (val) {
-                            setState(() => _selectedBadge = val);
+                            setState(() {
+                              _selectedBadge = val;
+                            });
                           },
+
                           decoration: _buildInputDecoration('Select Badge'),
                         ),
                       ],
@@ -315,8 +432,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 14),
+
+              // ==================================================
+              // CATEGORY
+              // ==================================================
               _buildLabel('Category'),
+
               _isLoadingCategories
                   ? const Center(
                       child: Padding(
@@ -328,51 +451,74 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       value: _categories.any((c) => c.id == _selectedCategoryId)
                           ? _selectedCategoryId
                           : null,
+
                       items: _categories.map((cat) {
                         return DropdownMenuItem<String>(
                           value: cat.id,
                           child: Text(cat.name),
                         );
                       }).toList(),
+
                       onChanged: (val) {
                         if (val != null) {
-                          setState(() => _selectedCategoryId = val);
+                          setState(() {
+                            _selectedCategoryId = val;
+                          });
                         }
                       },
+
                       decoration: _buildInputDecoration('Select Category'),
+
                       validator: (val) =>
                           val == null ? 'Please select a category' : null,
                     ),
+
               const SizedBox(height: 14),
+
+              // ==================================================
+              // PRICE + STOCK
+              // ==================================================
               Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+
                       children: [
-                        _buildLabel('Price (\$)'),
+                        _buildLabel('Price (\₦)'),
+
                         TextFormField(
                           controller: _priceController,
+
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
+
                           decoration: _buildInputDecoration('24.99'),
+
                           validator: (val) =>
                               val == null || val.isEmpty ? 'Required' : null,
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+
                       children: [
                         _buildLabel('Stock Quantity'),
+
                         TextFormField(
                           controller: _stockController,
+
                           keyboardType: TextInputType.number,
+
                           decoration: _buildInputDecoration('100'),
+
                           validator: (val) =>
                               val == null || val.isEmpty ? 'Required' : null,
                         ),
@@ -381,30 +527,50 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 14),
+
+              // ==================================================
+              // DESCRIPTION
+              // ==================================================
               _buildLabel('Description'),
+
               TextFormField(
                 controller: _descriptionController,
+
                 maxLines: 4,
+
                 decoration: _buildInputDecoration('Enter product details...'),
               ),
+
               const SizedBox(height: 24),
+
+              // ==================================================
+              // SAVE BUTTON
+              // ==================================================
               SizedBox(
                 width: double.infinity,
+
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveProduct,
+
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5722),
+
                     padding: const EdgeInsets.symmetric(vertical: 14),
+
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
+
                     elevation: 0,
                   ),
+
                   child: _isSaving
                       ? const SizedBox(
                           height: 20,
                           width: 20,
+
                           child: CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 2,
@@ -412,6 +578,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         )
                       : Text(
                           isEditing ? 'Update Product' : 'Save Product',
+
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -427,12 +594,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  // ============================================================
+  // PLACEHOLDER
+  // ============================================================
+
   Widget _buildPlaceholder() {
     return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
+
       children: [
         Icon(Icons.add_a_photo_outlined, size: 36, color: Color(0xFFFF5722)),
+
         SizedBox(height: 8),
+
         Text(
           'Upload Product Image',
           style: TextStyle(
@@ -445,11 +619,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  // ============================================================
+  // LABEL
+  // ============================================================
+
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
+
       child: Text(
         text,
+
         style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
@@ -459,23 +639,36 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  // ============================================================
+  // INPUT DECORATION
+  // ============================================================
+
   InputDecoration _buildInputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
+
       hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+
       filled: true,
       fillColor: Colors.white,
+
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+
         borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
+
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+
         borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
+
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+
         borderSide: const BorderSide(color: Color(0xFFFF5722), width: 1.5),
       ),
     );

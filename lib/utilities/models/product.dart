@@ -13,6 +13,7 @@ class Product {
   final String? description;
   final DateTime createdAt;
   final Uint8List? image;
+  final String? categoryName;
 
   Product({
     required this.id,
@@ -27,27 +28,54 @@ class Product {
     this.description,
     required this.createdAt,
     this.image,
+    this.categoryName,
   });
 
   factory Product.fromRow(Map<String, dynamic> row) {
+    Uint8List? imageBytes;
+
+    final rawImage = row['image'];
+
+    if (rawImage != null) {
+      if (rawImage is Uint8List) {
+        imageBytes = rawImage;
+      } else if (rawImage is List<int>) {
+        imageBytes = Uint8List.fromList(rawImage);
+      } else if (rawImage is String && rawImage.isNotEmpty) {
+        // Only use this fallback if mysql_client returns
+        // the BLOB as a String.
+        imageBytes = Uint8List.fromList(rawImage.codeUnits);
+      }
+    }
+
     return Product(
       id: row['id']?.toString() ?? '',
       name: row['name']?.toString() ?? '',
       categoryId: row['categoryId']?.toString() ?? '',
+
       price: double.tryParse(row['price']?.toString() ?? '0.0') ?? 0.0,
+
       quantity: int.tryParse(row['quantity']?.toString() ?? '0') ?? 0,
+
       brand: row['brand']?.toString(),
       badge: row['badge']?.toString(),
+
       rating: double.tryParse(row['rating']?.toString() ?? '0.0') ?? 0.0,
+
       discount: double.tryParse(row['discount']?.toString() ?? '0.0') ?? 0.0,
+
       description: row['description']?.toString(),
+
       createdAt: row['createdAt'] != null
           ? (row['createdAt'] is DateTime
                 ? row['createdAt'] as DateTime
-                : DateTime.tryParse(row['createdAt'].toString()) ??
-                      DateTime.now())
+                : DateTime.tryParse(
+                      row['createdAt'].toString(),
+                    ) ??
+                    DateTime.now())
           : DateTime.now(),
-      image: null,
+
+      image: imageBytes,
     );
   }
 }

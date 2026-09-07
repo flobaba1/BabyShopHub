@@ -602,7 +602,7 @@ class _CartScreenState extends State<CartScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 45),
 
             Container(
               width: double.infinity,
