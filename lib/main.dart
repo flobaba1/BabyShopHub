@@ -11,16 +11,17 @@ void main() async {
 
   // 1. Read first-time status before building the UI
   final bool isFirstTime = await OnboardingService.isFirstTimeUser();
-  String initialRoute = "";
-  // 2. Pass the initial route dynamically
-  if (isFirstTime) {
-    initialRoute = '/onboarding';
-  } else if (await UserSession.isLoggedIn()) {
-    await UserSession.loadUserSession(); // Load user session data
-    initialRoute = '/home';
-  } else {
-    initialRoute = '/login';
-  }
+   String initialRoute = "";
+   // 2. Pass the initial route dynamically
+   if (isFirstTime) {
+     initialRoute = '/onboarding';
+   } else if (await UserSession.isLoggedIn()) {
+     await UserSession.loadUserSession(); // Load user session data
+     initialRoute = '/home';
+   } else {
+     initialRoute = '/login';
+   }
+  // String initialRoute = '/products/reviews';
 
   runApp(BabyShopApp(initialRoute: initialRoute));
 
