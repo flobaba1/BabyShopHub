@@ -12,6 +12,7 @@ import '../products/all_products.dart';
 import '../categories/categories.dart';
 import '../categories/category_products_screen.dart';
 import '../products/search_products.dart';
+import '../homescreen/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _firstName = '';
   String _greeting = 'Good morning';
+  int _unreadNotificationCount = 0;
 
   Timer? _flashDealTimer;
   Timer? _bannerTimer;
@@ -56,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _setGreeting();
     _startFlashDealTimer();
     _startBannerTimer();
+    _loadUnreadNotificationCount();
   }
 
   // Dispose method to make sure the timer and notifier
@@ -63,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _flashDealTimer?.cancel();
+    _bannerTimer?.cancel();
     _bannerRemaining.dispose();
     _flashDealRemaining.dispose();
 
@@ -90,6 +94,26 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
         _error = e.toString();
       });
+    }
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      await UserSession.loadUserSession();
+
+      final userId = UserSession.loggedUser?.id;
+
+      if (userId == null || userId.isEmpty) return;
+
+      final count = await _mysqlService.getUnreadNotificationCount(userId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _unreadNotificationCount = count;
+      });
+    } catch (e) {
+      debugPrint('Failed to load notification count: $e');
     }
   }
 
@@ -148,40 +172,40 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-Future<void> _loadUserName() async {
-  try {
-    await UserSession.loadUserSession();
+  Future<void> _loadUserName() async {
+    try {
+      await UserSession.loadUserSession();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    final user = UserSession.loggedUser;
+      final user = UserSession.loggedUser;
 
-    if (user == null) {
-      debugPrint('No logged-in user found in session.');
-      return;
+      if (user == null) {
+        debugPrint('No logged-in user found in session.');
+        return;
+      }
+
+      final fullName = user.fullName.trim();
+
+      if (fullName.isEmpty) {
+        debugPrint('Logged-in user has no full name.');
+        return;
+      }
+
+      final firstName = fullName.split(RegExp(r'\s+')).first;
+
+      setState(() {
+        _firstName = firstName;
+      });
+
+      debugPrint('HomeScreen user: $fullName');
+      debugPrint('HomeScreen first name: $firstName');
+    } catch (e) {
+      debugPrint('Failed to load user session: $e');
     }
-
-    final fullName = user.fullName.trim();
-
-    if (fullName.isEmpty) {
-      debugPrint('Logged-in user has no full name.');
-      return;
-    }
-
-    final firstName = fullName.split(RegExp(r'\s+')).first;
-
-    setState(() {
-      _firstName = firstName;
-    });
-
-    debugPrint('HomeScreen user: $fullName');
-    debugPrint('HomeScreen first name: $firstName');
-  } catch (e) {
-    debugPrint('Failed to load user session: $e');
   }
-}
 
-Future<void> _loadCategories() async {
+  Future<void> _loadCategories() async {
     try {
       final categories = await _mysqlService.getCategoriesWithProductCount();
 
@@ -345,7 +369,13 @@ Future<void> _loadCategories() async {
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xFFFF6600),
-          onRefresh: _loadProducts,
+          //onRefresh: _loadProducts,
+          onRefresh: () async {
+            await Future.wait([
+              _loadProducts(),
+              _loadUnreadNotificationCount(),
+            ]);
+          },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
@@ -386,8 +416,18 @@ Future<void> _loadCategories() async {
                       // Notification
                       _circleButton(
                         icon: Icons.notifications_none_rounded,
-                        showDot: true,
-                        onTap: () {},
+                        showDot: _unreadNotificationCount > 0,
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
+
+                          // Refresh unread count when the user comes back.
+                          _loadUnreadNotificationCount();
+                        },
                       ),
 
                       const SizedBox(width: 9),
