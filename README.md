@@ -61,6 +61,7 @@ Run the following command to download the project's Flutter dependencies:
 
 ```bash
 flutter pub get
+dart run build_runner build --delete-conflicting-outputs
 ```
 
 ### 3. Check Flutter Setup
