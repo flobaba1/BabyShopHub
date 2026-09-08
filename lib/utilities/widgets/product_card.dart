@@ -41,15 +41,14 @@ class ProductCard extends StatelessWidget {
             _ProductImage(product: product),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(9, 8, 9, 9),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ============================================================
                   // BRAND
-                  // ============================================================
-                  if (product.brand != null && product.brand!.trim().isNotEmpty)
+                  if (product.brand != null &&
+                      product.brand!.trim().isNotEmpty) ...[
                     Text(
                       product.brand!,
                       maxLines: 1,
@@ -60,36 +59,31 @@ class ProductCard extends StatelessWidget {
                         color: Color(0xFFFF6600),
                       ),
                     ),
+                    const SizedBox(height: 2),
+                  ],
 
-                  if (product.brand != null && product.brand!.trim().isNotEmpty)
-                    const SizedBox(height: 3),
-
-                  // ============================================================
                   // PRODUCT NAME
-                  // ============================================================
                   Text(
                     product.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 10,
-                      height: 1.2,
+                      height: 1.15,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF273143),
                     ),
                   ),
 
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
 
-                  // ============================================================
                   // RATING
-                  // ============================================================
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
                         Icons.star_rounded,
-                        size: 13,
+                        size: 12,
                         color: Color(0xFFFFB000),
                       ),
                       const SizedBox(width: 2),
@@ -104,48 +98,23 @@ class ProductCard extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 6),
-
-                  // ============================================================
-                  // PRICE + ADD BUTTON
-                  // ============================================================
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _formatPrice(product.price),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF202938),
-                          ),
-                        ),
-                      ),
-
-                      Container(
-                        width: 25,
-                        height: 25,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF6600),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-
                   const SizedBox(height: 4),
 
-                  // ============================================================
+                  // PRICE
+                  Text(
+                    _formatPrice(product.price),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF202938),
+                    ),
+                  ),
+
+                  const SizedBox(height: 3),
+
                   // STOCK
-                  // ============================================================
                   Text(
                     product.quantity > 0
                         ? '${product.quantity} in stock'
@@ -183,20 +152,13 @@ class _ProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 125,
+    return AspectRatio(
+      aspectRatio: 1.3,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // ============================================================
-          // PRODUCT IMAGE
-          // ============================================================
           _buildImage(),
 
-          // ============================================================
-          // BADGE
-          // ============================================================
           if (product.badge != null && product.badge!.trim().isNotEmpty)
             Positioned(
               top: 7,
@@ -218,9 +180,6 @@ class _ProductImage extends StatelessWidget {
               ),
             ),
 
-          // ============================================================
-          // DISCOUNT
-          // ============================================================
           if (product.discount > 0)
             Positioned(
               right: 7,
@@ -242,9 +201,6 @@ class _ProductImage extends StatelessWidget {
               ),
             ),
 
-          // ============================================================
-          // FAVORITE
-          // ============================================================
           Positioned(
             top: 7,
             right: 7,
@@ -267,14 +223,9 @@ class _ProductImage extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // BUILD IMAGE FROM product.image
-  // ============================================================
-
   Widget _buildImage() {
     final image = product.image;
 
-    // No image
     if (image == null || image.isEmpty) {
       return Container(
         color: const Color(0xFFF6F6F6),
@@ -288,19 +239,12 @@ class _ProductImage extends StatelessWidget {
       );
     }
 
-    // Image already loaded inside Product
     return Image.memory(
       image,
       fit: BoxFit.cover,
-
-      // The card is only 125px high.
-      // This prevents Flutter from decoding the full-size
-      // 1MB+ image when it doesn't need to.
       cacheWidth: 300,
       cacheHeight: 300,
-
       gaplessPlayback: true,
-
       errorBuilder: (context, error, stackTrace) {
         return Container(
           color: const Color(0xFFF6F6F6),
@@ -315,10 +259,6 @@ class _ProductImage extends StatelessWidget {
       },
     );
   }
-
-  // ============================================================
-  // BADGE COLOR
-  // ============================================================
 
   Color _badgeColor(String badge) {
     final value = badge.toLowerCase();
