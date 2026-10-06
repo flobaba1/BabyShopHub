@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final products = await _mysqlService.fetchProductsPaginated(
         offset: 0,
-        limit: 20,
+        limit: 6, // Updated from 20 to 6
       );
 
       if (!mounted) return;
@@ -912,37 +912,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // EXISTING PRODUCT FUNCTIONALITY
   Widget _productColumns() {
-    final products = _products.take(6).toList();
+    // Cap the displayed list to maximum 6 items
+    final displayProducts = _products.take(6).toList();
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (int i = 0; i < products.length; i += 2)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: ProductCard(product: products[i]),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (int i = 1; i < products.length; i += 2)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: ProductCard(product: products[i]),
-                ),
-            ],
-          ),
-        ),
-      ],
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: displayProducts.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 0.58,
+      ),
+      itemBuilder: (context, index) {
+        return ProductCard(product: displayProducts[index]);
+      },
     );
   }
 

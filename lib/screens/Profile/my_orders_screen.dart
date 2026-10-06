@@ -69,9 +69,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
       if (items.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No products found in this order.'),
-          ),
+          const SnackBar(content: Text('No products found in this order.')),
         );
         return;
       }
@@ -80,9 +78,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
       if (productId == null || productId.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to identify the product.'),
-          ),
+          const SnackBar(content: Text('Unable to identify the product.')),
         );
         return;
       }
@@ -90,18 +86,14 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => WriteReviewScreen(
-            productId: productId,
-          ),
+          builder: (context) => WriteReviewScreen(productId: productId),
         ),
       );
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to open the review page.'),
-        ),
+        const SnackBar(content: Text('Unable to open the review page.')),
       );
     }
   }
@@ -207,14 +199,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F4),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -241,9 +226,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 20),
-              Expanded(
-                child: _buildBody(),
-              ),
+              Expanded(child: _buildBody()),
             ],
           ),
         ),
@@ -340,10 +323,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget _buildOrderCard(
-    BuildContext context,
-    Map<String, dynamic> order,
-  ) {
+  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
     final status = order['status'] ?? 'pending';
     final statusColor = _getStatusColor(status);
     final statusBg = _getStatusBackground(status);
@@ -566,16 +546,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: () {
-                  _writeReviewForOrder(
-                    context,
-                    order['id'].toString(),
-                  );
+                  _writeReviewForOrder(context, order['id'].toString());
                 },
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFFFFF3EC),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 11,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
