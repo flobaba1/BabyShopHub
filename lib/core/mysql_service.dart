@@ -1169,9 +1169,41 @@ class MySQLService {
     return result.affectedRows.toInt() > 0;
   }
 
+<<<<<<< HEAD
+  // Future<List<Map<String, String?>>> getOrderItems(String orderId) async {
+  //   final conn = await connection;
+
+  //   final result = await conn.execute(
+  //     '''
+  //     SELECT
+  //       oi.productId,
+  //       p.name,
+  //       oi.quantity
+  //     FROM OrderItems oi
+  //     INNER JOIN Products p
+  //       ON p.id = oi.productId
+  //     WHERE oi.orderId = :orderId
+  //     ''',
+  //     {
+  //       'orderId': orderId,
+  //     },
+  //   );
+
+  //   return result.rows.map((row) {
+  //     return {
+  //       'productId': row.colAt(0)?.toString(),
+  //       'name': row.colAt(1)?.toString(),
+  //       'quantity': row.colAt(2)?.toString(),
+  //     };
+  //   }).toList();
+  // }
+
+  Future<List<Map<String, String?>>> getProductReviews(String productId) async {
+=======
   Future<List<Map<String, String?>>> getProductReviews(
     String productId,
   ) async {
+>>>>>>> 3b19610a0e0d943236b6ec1d4485944031c83279
     final conn = await connection;
 
     final result = await conn.execute(
